@@ -1,30 +1,502 @@
 "use client";
 
-import ModulePage from "../_components/module-page";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useMesliteSession } from "../_lib/session";
+
+type ManagedUser = {
+  id: string;
+  name: string;
+  email: string;
+  department: string;
+  workOrderView: boolean;
+  reportView: boolean;
+  userOperation: boolean;
+};
+
+type PendingUser = {
+  id: string;
+  name: string;
+  email: string;
+  department: string;
+  method: "invite" | "scan" | "manual";
+  createdAt: string;
+};
+
+type OperationLog = {
+  id: string;
+  action: string;
+  detail: string;
+  operator: string;
+  createdAt: string;
+};
+
+const USERS_KEY = "meslite_users";
+const PENDING_USERS_KEY = "meslite_pending_users";
+const LOGS_KEY = "meslite_operation_logs";
+
+const PRESERVE_KEYS = [
+  "meslite_team_settings",
+  USERS_KEY,
+  PENDING_USERS_KEY,
+  "meslite_departments",
+  "meslite_process_plans",
+  "meslite_defect_categories",
+  "meslite_order_workorder_categories",
+  "meslite_product_categories",
+  "meslite_products",
+];
+
+const CLEAR_KEYS = [
+  "meslite_work_orders",
+  "meslite_tasks",
+  "meslite_reports",
+  "meslite_report_records",
+];
+
+function nextId(prefix: string, ids: string[]) {
+  const max = ids
+    .map((id) => Number.parseInt(id.replace(`${prefix}_`, ""), 10))
+    .filter((n) => Number.isFinite(n))
+    .reduce((acc, curr) => Math.max(acc, curr), 0);
+  return `${prefix}_${String(max + 1).padStart(6, "0")}`;
+}
 
 const text = {
   zh: {
     title: "系统设置",
-    subtitle: "管理组织、角色权限、账号策略、日志与系统参数。",
-    filters: ["设置分类", "作用范围", "启用状态", "修改人", "更新时间", "风险等级", "版本", "排序"],
-    columns: ["设置项", "当前值", "生效范围", "最后修改"],
-    emptyTitle: "暂无系统配置变更",
-    emptyDescription: "建议先配置角色权限、账号安全策略与审计日志保留周期。",
-    createLabel: "新增系统项",
+    subtitle: "用户与权限管理、审批加入、操作日志与初始化。",
     backLabel: "返回首页",
+    addUser: "添加用户",
+    invite: "转发邀请好友",
+    scanJoin: "扫码加入",
+    manualAdd: "手动添加",
+    name: "姓名",
+    email: "邮箱",
+    department: "部门",
+    confirmAdd: "确认添加",
+    pending: "审批加入（待审批用户）",
+    approve: "通过",
+    reject: "拒绝",
+    userManagement: "用户管理",
+    workOrderPermission: "工单查看权限",
+    reportPermission: "报工查看权限",
+    operationPermission: "用户操作权限",
+    logs: "操作日志",
+    initData: "初始化数据",
+    initHint:
+      "初始化后将保留团队设置与用户数据，并保留基础资料（工序、不良品分类、工单分类、产品分类、产品）。",
+    doInit: "执行初始化",
+    initDone: "初始化完成。",
   },
   en: {
     title: "System Settings",
-    subtitle: "Manage roles, permissions, account policies, logs and system parameters.",
-    filters: ["Category", "Scope", "Status", "Updated By", "Updated At", "Risk Level", "Version", "Sort"],
-    columns: ["Setting Item", "Current Value", "Effective Scope", "Last Modified"],
-    emptyTitle: "No system changes",
-    emptyDescription: "Configure role permissions, account policies and audit retention first.",
-    createLabel: "Add System Item",
+    subtitle: "User permissions, join approval, operation logs and data initialization.",
     backLabel: "Back to Dashboard",
+    addUser: "Add User",
+    invite: "Forward Invite",
+    scanJoin: "Join by Scan",
+    manualAdd: "Manual Add",
+    name: "Name",
+    email: "Email",
+    department: "Department",
+    confirmAdd: "Confirm Add",
+    pending: "Join Approval (Pending Users)",
+    approve: "Approve",
+    reject: "Reject",
+    userManagement: "User Management",
+    workOrderPermission: "Work Order View",
+    reportPermission: "Report View",
+    operationPermission: "User Operation",
+    logs: "Operation Logs",
+    initData: "Initialize Data",
+    initHint:
+      "Initialization keeps team settings, user data, and master data (processes, defect categories, work-order categories, product categories, products).",
+    doInit: "Run Initialization",
+    initDone: "Initialization completed.",
   },
 };
 
+function normalizeUsers(raw: unknown): ManagedUser[] {
+  if (!Array.isArray(raw)) {
+    return [];
+  }
+  return raw
+    .filter((item) => typeof item === "object" && item !== null)
+    .map((item, index) => {
+      const user = item as Record<string, unknown>;
+      const email = String(user.email || `user${index + 1}@local`);
+      const username = String(user.username || email.split("@")[0] || `user${index + 1}`);
+      return {
+        id: String(user.id || `usr_${index + 1}`),
+        name: String(user.name || username),
+        email,
+        department: String(user.department || ""),
+        workOrderView: Boolean(user.workOrderView ?? true),
+        reportView: Boolean(user.reportView ?? true),
+        userOperation: Boolean(user.userOperation ?? false),
+      };
+    });
+}
+
+function toStoredUsers(users: ManagedUser[]) {
+  return users.map((user) => ({
+    id: user.id,
+    username: user.name,
+    email: user.email,
+    password: "temp123456",
+    factoryName: "",
+    role: user.userOperation ? "super_admin" : "owner",
+    department: user.department,
+    workOrderView: user.workOrderView,
+    reportView: user.reportView,
+    userOperation: user.userOperation,
+    createdAt: new Date().toISOString(),
+  }));
+}
+
 export default function SystemSettingsPage() {
-  return <ModulePage text={text} />;
+  const router = useRouter();
+  const { session, locale } = useMesliteSession();
+  const copy = useMemo(() => text[locale], [locale]);
+
+  const [users, setUsers] = useState<ManagedUser[]>(() => {
+    if (typeof window === "undefined") {
+      return [];
+    }
+    const raw = localStorage.getItem(USERS_KEY);
+    if (!raw) {
+      return [];
+    }
+    try {
+      return normalizeUsers(JSON.parse(raw));
+    } catch {
+      return [];
+    }
+  });
+
+  const [pendingUsers, setPendingUsers] = useState<PendingUser[]>(() => {
+    if (typeof window === "undefined") {
+      return [];
+    }
+    const raw = localStorage.getItem(PENDING_USERS_KEY);
+    if (!raw) {
+      return [];
+    }
+    try {
+      const parsed = JSON.parse(raw) as PendingUser[];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [logs, setLogs] = useState<OperationLog[]>(() => {
+    if (typeof window === "undefined") {
+      return [];
+    }
+    const raw = localStorage.getItem(LOGS_KEY);
+    if (!raw) {
+      return [];
+    }
+    try {
+      const parsed = JSON.parse(raw) as OperationLog[];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [department, setDepartment] = useState("");
+  const [message, setMessage] = useState("");
+
+  const appendLog = (action: string, detail: string) => {
+    const entry: OperationLog = {
+      id: nextId(
+        "log",
+        logs.map((item) => item.id),
+      ),
+      action,
+      detail,
+      operator: session?.email || "system",
+      createdAt: new Date().toISOString(),
+    };
+    const next = [entry, ...logs].slice(0, 100);
+    setLogs(next);
+    localStorage.setItem(LOGS_KEY, JSON.stringify(next));
+  };
+
+  const saveUsers = (next: ManagedUser[]) => {
+    setUsers(next);
+    localStorage.setItem(USERS_KEY, JSON.stringify(toStoredUsers(next)));
+  };
+
+  const savePendingUsers = (next: PendingUser[]) => {
+    setPendingUsers(next);
+    localStorage.setItem(PENDING_USERS_KEY, JSON.stringify(next));
+  };
+
+  const addPendingUser = (method: PendingUser["method"], manualName?: string) => {
+    const pending: PendingUser = {
+      id: nextId(
+        "pending",
+        pendingUsers.map((item) => item.id),
+      ),
+      name: manualName?.trim() || `${copy.manualAdd}_${pendingUsers.length + 1}`,
+      email: email.trim() || `pending${pendingUsers.length + 1}@local`,
+      department: department.trim(),
+      method,
+      createdAt: new Date().toISOString(),
+    };
+    savePendingUsers([pending, ...pendingUsers]);
+    appendLog("add_pending_user", `${pending.name} (${method})`);
+  };
+
+  const approvePending = (pendingId: string) => {
+    const target = pendingUsers.find((item) => item.id === pendingId);
+    if (!target) {
+      return;
+    }
+    const nextUsers = [
+      ...users,
+      {
+        id: nextId(
+          "usr",
+          users.map((item) => item.id),
+        ),
+        name: target.name,
+        email: target.email,
+        department: target.department,
+        workOrderView: true,
+        reportView: true,
+        userOperation: false,
+      },
+    ];
+    saveUsers(nextUsers);
+    savePendingUsers(pendingUsers.filter((item) => item.id !== pendingId));
+    appendLog("approve_user", target.name);
+  };
+
+  const rejectPending = (pendingId: string) => {
+    const target = pendingUsers.find((item) => item.id === pendingId);
+    savePendingUsers(pendingUsers.filter((item) => item.id !== pendingId));
+    if (target) {
+      appendLog("reject_user", target.name);
+    }
+  };
+
+  const updatePermission = (
+    id: string,
+    field: "workOrderView" | "reportView" | "userOperation",
+    value: boolean,
+  ) => {
+    const next = users.map((item) => (item.id === id ? { ...item, [field]: value } : item));
+    saveUsers(next);
+  };
+
+  const manualAdd = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      return;
+    }
+    addPendingUser("manual", name);
+    setName("");
+    setEmail("");
+    setDepartment("");
+  };
+
+  const initializeData = () => {
+    CLEAR_KEYS.forEach((key) => localStorage.removeItem(key));
+    PRESERVE_KEYS.forEach((key) => {
+      const value = localStorage.getItem(key);
+      if (value !== null) {
+        localStorage.setItem(key, value);
+      }
+    });
+    setMessage(copy.initDone);
+    appendLog("initialize_data", "preserve team/user/master data");
+  };
+
+  if (!session) {
+    return null;
+  }
+
+  return (
+    <main className="min-h-screen bg-[#f7f7f5] p-4 sm:p-6">
+      <div className="mx-auto max-w-6xl">
+        <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-[0_16px_40px_-28px_rgba(0,0,0,.35)]">
+          <button
+            type="button"
+            onClick={() => router.push("/meslite")}
+            className="mb-3 rounded-full border border-zinc-300 px-3 py-1 text-xs text-zinc-600"
+          >
+            {copy.backLabel}
+          </button>
+          <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">{copy.title}</h1>
+          <p className="mt-1 text-sm text-zinc-500">{copy.subtitle}</p>
+        </section>
+
+        <section className="mt-4 rounded-3xl border border-black/5 bg-white p-5">
+          <h2 className="text-lg font-semibold text-zinc-900">{copy.addUser}</h2>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => addPendingUser("invite")}
+              className="rounded-full border border-zinc-300 px-4 py-2 text-sm text-zinc-700"
+            >
+              {copy.invite}
+            </button>
+            <button
+              type="button"
+              onClick={() => addPendingUser("scan")}
+              className="rounded-full border border-zinc-300 px-4 py-2 text-sm text-zinc-700"
+            >
+              {copy.scanJoin}
+            </button>
+          </div>
+
+          <form className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-4" onSubmit={manualAdd}>
+            <input
+              type="text"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={copy.name}
+              className="rounded-xl border border-zinc-300 px-3 py-2"
+            />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder={copy.email}
+              className="rounded-xl border border-zinc-300 px-3 py-2"
+            />
+            <input
+              type="text"
+              value={department}
+              onChange={(e) => setDepartment(e.target.value)}
+              placeholder={copy.department}
+              className="rounded-xl border border-zinc-300 px-3 py-2"
+            />
+            <button className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white">
+              {copy.confirmAdd}
+            </button>
+          </form>
+        </section>
+
+        <section className="mt-4 rounded-3xl border border-black/5 bg-white p-5">
+          <h2 className="text-lg font-semibold text-zinc-900">{copy.pending}</h2>
+          <div className="mt-3 space-y-2">
+            {pendingUsers.length === 0 ? (
+              <p className="text-sm text-zinc-500">-</p>
+            ) : (
+              pendingUsers.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex flex-wrap items-center justify-between rounded-xl border border-zinc-200 px-3 py-2"
+                >
+                  <p className="text-sm text-zinc-700">
+                    {item.name} / {item.department || "-"}
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => approvePending(item.id)}
+                      className="rounded-full bg-zinc-900 px-3 py-1 text-xs text-white"
+                    >
+                      {copy.approve}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => rejectPending(item.id)}
+                      className="rounded-full border border-zinc-300 px-3 py-1 text-xs text-zinc-700"
+                    >
+                      {copy.reject}
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section className="mt-4 rounded-3xl border border-black/5 bg-white p-5">
+          <h2 className="text-lg font-semibold text-zinc-900">{copy.userManagement}</h2>
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="text-zinc-500">
+                <tr>
+                  <th className="px-2 py-2">{copy.name}</th>
+                  <th className="px-2 py-2">{copy.department}</th>
+                  <th className="px-2 py-2">{copy.workOrderPermission}</th>
+                  <th className="px-2 py-2">{copy.reportPermission}</th>
+                  <th className="px-2 py-2">{copy.operationPermission}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((user) => (
+                  <tr key={user.id} className="border-t border-zinc-100 text-zinc-700">
+                    <td className="px-2 py-2">{user.name}</td>
+                    <td className="px-2 py-2">{user.department || "-"}</td>
+                    <td className="px-2 py-2">
+                      <input
+                        type="checkbox"
+                        checked={user.workOrderView}
+                        onChange={(e) => updatePermission(user.id, "workOrderView", e.target.checked)}
+                      />
+                    </td>
+                    <td className="px-2 py-2">
+                      <input
+                        type="checkbox"
+                        checked={user.reportView}
+                        onChange={(e) => updatePermission(user.id, "reportView", e.target.checked)}
+                      />
+                    </td>
+                    <td className="px-2 py-2">
+                      <input
+                        type="checkbox"
+                        checked={user.userOperation}
+                        onChange={(e) => updatePermission(user.id, "userOperation", e.target.checked)}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="mt-4 rounded-3xl border border-black/5 bg-white p-5">
+          <h2 className="text-lg font-semibold text-zinc-900">{copy.logs}</h2>
+          <div className="mt-3 space-y-2">
+            {logs.length === 0 ? (
+              <p className="text-sm text-zinc-500">-</p>
+            ) : (
+              logs.map((log) => (
+                <div key={log.id} className="rounded-xl border border-zinc-200 px-3 py-2 text-sm text-zinc-700">
+                  [{new Date(log.createdAt).toLocaleString()}] {log.operator} - {log.action}:{" "}
+                  {log.detail}
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section className="mt-4 rounded-3xl border border-black/5 bg-white p-5">
+          <h2 className="text-lg font-semibold text-zinc-900">{copy.initData}</h2>
+          <p className="mt-2 text-sm text-zinc-600">{copy.initHint}</p>
+          <button
+            type="button"
+            onClick={initializeData}
+            className="mt-3 rounded-full bg-zinc-900 px-5 py-2 text-sm font-medium text-white"
+          >
+            {copy.doInit}
+          </button>
+          {message ? <p className="mt-2 text-sm text-emerald-700">{message}</p> : null}
+        </section>
+      </div>
+    </main>
+  );
 }
