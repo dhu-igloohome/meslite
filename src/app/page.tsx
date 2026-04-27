@@ -12,7 +12,8 @@ type Copy = {
   switchLanguage: string;
   loginTab: string;
   registerTab: string;
-  email: string;
+  loginAccount: string;
+  registerEmail: string;
   password: string;
   factoryName: string;
   submitLogin: string;
@@ -21,6 +22,7 @@ type Copy = {
   registerSuccess: string;
   accountExists: string;
   accountMissing: string;
+  invalidEmail: string;
   passwordError: string;
   passwordHint: string;
 };
@@ -32,7 +34,8 @@ const translations: Record<Locale, Copy> = {
     switchLanguage: "切换到 English",
     loginTab: "登录",
     registerTab: "注册",
-    email: "邮箱",
+    loginAccount: "邮箱或用户名",
+    registerEmail: "邮箱",
     password: "密码",
     factoryName: "工厂名称",
     submitLogin: "登录并进入系统",
@@ -40,7 +43,8 @@ const translations: Record<Locale, Copy> = {
     loginSuccess: "登录成功，正在跳转...",
     registerSuccess: "注册成功，正在跳转...",
     accountExists: "该邮箱已注册，请直接登录。",
-    accountMissing: "该邮箱未注册，请先注册。",
+    accountMissing: "账号不存在，请先注册。",
+    invalidEmail: "注册时请输入有效邮箱地址。",
     passwordError: "密码错误，请重试。",
     passwordHint: "请设置至少 6 位密码",
   },
@@ -50,7 +54,8 @@ const translations: Record<Locale, Copy> = {
     switchLanguage: "Switch to 中文",
     loginTab: "Login",
     registerTab: "Register",
-    email: "Email",
+    loginAccount: "Email or Username",
+    registerEmail: "Email",
     password: "Password",
     factoryName: "Factory Name",
     submitLogin: "Login and continue",
@@ -58,13 +63,15 @@ const translations: Record<Locale, Copy> = {
     loginSuccess: "Login successful, redirecting...",
     registerSuccess: "Registration successful, redirecting...",
     accountExists: "This email already exists. Please log in.",
-    accountMissing: "No account found. Please register first.",
+    accountMissing: "Account not found. Please register first.",
+    invalidEmail: "Please enter a valid email for registration.",
     passwordError: "Incorrect password. Please try again.",
     passwordHint: "Use at least 6 characters",
   },
 };
 
 type StoredUser = {
+  username: string;
   email: string;
   password: string;
   factoryName: string;
@@ -76,6 +83,7 @@ const USERS_KEY = "meslite_users";
 const SESSION_KEY = "meslite_session";
 const LANG_KEY = "meslite_lang";
 const DEFAULT_SUPER_ADMIN: StoredUser = {
+  username: "david",
   email: "13928445679@163.com",
   password: "david123",
   factoryName: "igloo公司",
@@ -93,7 +101,7 @@ export default function Home() {
     return saved === "zh" || saved === "en" ? saved : "zh";
   });
   const [mode, setMode] = useState<Mode>("login");
-  const [email, setEmail] = useState("");
+  const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
   const [factoryName, setFactoryName] = useState("");
   const [message, setMessage] = useState("");
@@ -106,8 +114,20 @@ export default function Home() {
       return [];
     }
     try {
-      const parsed = JSON.parse(raw) as StoredUser[];
-      return Array.isArray(parsed) ? parsed : [];
+      const parsed = JSON.parse(raw) as Partial<StoredUser>[];
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+      return parsed
+        .filter((item) => typeof item.email === "string" && typeof item.password === "string")
+        .map((item) => ({
+          username: item.username || item.email!.split("@")[0] || item.email!,
+          email: item.email!,
+          password: item.password!,
+          factoryName: item.factoryName || "",
+          role: item.role === "super_admin" ? "super_admin" : "owner",
+          createdAt: item.createdAt || new Date().toISOString(),
+        }));
     } catch {
       return [];
     }
@@ -152,14 +172,20 @@ export default function Home() {
   };
 
   const handleRegister = () => {
+    const email = account.trim().toLowerCase();
     const users = getUsers();
-    const exists = users.find((user) => user.email === email.trim().toLowerCase());
+    const exists = users.find((user) => user.email === email);
     if (exists) {
       setMessage(copy.accountExists);
       return;
     }
+    if (!email.includes("@")) {
+      setMessage(copy.invalidEmail);
+      return;
+    }
     const newUser: StoredUser = {
-      email: email.trim().toLowerCase(),
+      username: email.split("@")[0] || email,
+      email,
       password,
       factoryName: factoryName.trim(),
       role: "owner",
@@ -172,7 +198,11 @@ export default function Home() {
 
   const handleLogin = () => {
     const users = getUsers();
-    const user = users.find((item) => item.email === email.trim().toLowerCase());
+    const normalized = account.trim().toLowerCase();
+    const user = users.find(
+      (item) =>
+        item.email.toLowerCase() === normalized || item.username.toLowerCase() === normalized,
+    );
     if (!user) {
       setMessage(copy.accountMissing);
       return;
@@ -252,12 +282,13 @@ export default function Home() {
 
         <form className="space-y-3" onSubmit={submit}>
           <label className="block text-sm text-slate-700">
-            {copy.email}
+            {mode === "login" ? copy.loginAccount : copy.registerEmail}
             <input
-              type="email"
+              type="text"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={account}
+              onChange={(e) => setAccount(e.target.value)}
+              placeholder={mode === "login" ? "david / 13928445679@163.com" : "name@example.com"}
               className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
             />
           </label>
