@@ -145,13 +145,37 @@ export default function Home() {
 
   const ensureSuperAdmin = () => {
     const users = getUsers();
-    const exists = users.some(
-      (user) => user.email.toLowerCase() === DEFAULT_SUPER_ADMIN.email.toLowerCase(),
-    );
+    const targetEmail = DEFAULT_SUPER_ADMIN.email.toLowerCase();
+    const targetIndex = users.findIndex((user) => user.email.toLowerCase() === targetEmail);
+
+    if (targetIndex >= 0) {
+      const merged: StoredUser = {
+        ...users[targetIndex],
+        ...DEFAULT_SUPER_ADMIN,
+        email: users[targetIndex].email,
+      };
+      const nextUsers = [...users];
+      nextUsers[targetIndex] = merged;
+      saveUsers(nextUsers);
+      return;
+    }
+
+    const exists = users.some((user) => user.email.toLowerCase() === targetEmail);
     if (exists) {
       return;
     }
+
     saveUsers([...users, DEFAULT_SUPER_ADMIN]);
+  };
+
+  const normalizeAccount = (value: string) => value.trim().toLowerCase();
+
+  const findUserForLogin = (users: StoredUser[], accountValue: string) => {
+    const normalized = normalizeAccount(accountValue);
+    return users.find(
+      (item) =>
+        item.email.toLowerCase() === normalized || item.username.toLowerCase() === normalized,
+    );
   };
 
   useEffect(() => {
@@ -204,11 +228,7 @@ export default function Home() {
 
   const handleLogin = () => {
     const users = getUsers();
-    const normalized = account.trim().toLowerCase();
-    const user = users.find(
-      (item) =>
-        item.email.toLowerCase() === normalized || item.username.toLowerCase() === normalized,
-    );
+    const user = findUserForLogin(users, account);
     if (!user) {
       setMessage(copy.accountMissing);
       return;
