@@ -14,6 +14,8 @@ type Copy = {
   registerTab: string;
   loginAccount: string;
   registerEmail: string;
+  loginPlaceholder: string;
+  registerEmailPlaceholder: string;
   password: string;
   factoryName: string;
   submitLogin: string;
@@ -36,6 +38,8 @@ const translations: Record<Locale, Copy> = {
     registerTab: "注册",
     loginAccount: "邮箱或用户名",
     registerEmail: "邮箱",
+    loginPlaceholder: "请输入账号",
+    registerEmailPlaceholder: "请输入邮箱地址",
     password: "密码",
     factoryName: "工厂名称",
     submitLogin: "登录并进入系统",
@@ -56,6 +60,8 @@ const translations: Record<Locale, Copy> = {
     registerTab: "Register",
     loginAccount: "Email or Username",
     registerEmail: "Email",
+    loginPlaceholder: "Enter email or username",
+    registerEmailPlaceholder: "name@example.com",
     password: "Password",
     factoryName: "Factory Name",
     submitLogin: "Login and continue",
@@ -288,7 +294,9 @@ export default function Home() {
               required
               value={account}
               onChange={(e) => setAccount(e.target.value)}
-              placeholder={mode === "login" ? "david / 13928445679@163.com" : "name@example.com"}
+              placeholder={
+                mode === "login" ? copy.loginPlaceholder : copy.registerEmailPlaceholder
+              }
               className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
             />
           </label>
