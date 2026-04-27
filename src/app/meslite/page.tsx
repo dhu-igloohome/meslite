@@ -1,98 +1,72 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
-
-type Locale = "zh" | "en";
-
-type Session = {
-  email: string;
-  factoryName: string;
-  locale: Locale;
-};
-
-const SESSION_KEY = "meslite_session";
-const LANG_KEY = "meslite_lang";
+import { useMesliteSession } from "./_lib/session";
 
 const text = {
   zh: {
     title: "MESLite",
-    greeting: "欢迎回来",
-    modules: ["工单", "任务", "报工", "基础资料", "功能设置", "扫码查工单"],
-    statLabels: ["待下发", "生产中", "暂停中", "已超期"],
-    taskTitle: "我的任务",
-    taskFilter: "只看当前生产",
-    navItems: ["首页", "进度", "报表", "我的"],
+    greeting: "企业制造执行平台",
+    modules: [
+      "订单/工单管理",
+      "任务管理",
+      "报工管理",
+      "基础数据",
+      "功能设置",
+      "扫码查询",
+      "系统设置",
+    ],
+    statLabels: ["待处理订单", "进行中任务", "今日报工", "异常提醒"],
+    statValues: ["128", "46", "214", "3"],
+    overviewTitle: "系统概览",
+    overviewText: "统一管理订单、任务、报工与主数据，支持移动扫码查询与系统级配置。",
     account: "账号",
     factory: "工厂",
     logout: "退出登录",
   },
   en: {
     title: "MESLite",
-    greeting: "Welcome back",
+    greeting: "Manufacturing Execution Platform",
     modules: [
-      "Work Orders",
+      "Order / Work Orders",
       "Tasks",
-      "Reporting",
-      "Base Data",
-      "Settings",
-      "Scan Order",
+      "Production Reporting",
+      "Master Data",
+      "Feature Settings",
+      "Scan Query",
+      "System Settings",
     ],
-    statLabels: ["Pending", "In Production", "Paused", "Overdue"],
-    taskTitle: "My Tasks",
-    taskFilter: "Current production only",
-    navItems: ["Home", "Progress", "Reports", "Me"],
+    statLabels: ["Pending Orders", "Running Tasks", "Reports Today", "Alerts"],
+    statValues: ["128", "46", "214", "3"],
+    overviewTitle: "Platform Overview",
+    overviewText:
+      "Centralize order, task, reporting and master data operations with mobile scan query and system-level settings.",
     account: "Account",
     factory: "Factory",
     logout: "Log out",
   },
 };
 
-const moduleIcons = ["WO", "TS", "RP", "BD", "ST", "SC"];
-const navIcons = ["H", "P", "R", "M"];
+const moduleIcons = ["OM", "TM", "RM", "MD", "FS", "SQ", "SS"];
+const moduleRoutes = [
+  "/meslite/work-orders",
+  "/meslite/tasks",
+  "/meslite/reporting",
+  "/meslite/master-data",
+  "/meslite/feature-settings",
+  "/meslite/scan-query",
+  "/meslite/system-settings",
+];
 
 export default function MeslitePage() {
   const router = useRouter();
-  const [session] = useState<Session | null>(() => {
-    if (typeof window === "undefined") {
-      return null;
-    }
-    const raw = window.localStorage.getItem(SESSION_KEY);
-    if (!raw) {
-      return null;
-    }
-    try {
-      const parsed = JSON.parse(raw) as Session;
-      return parsed?.email ? parsed : null;
-    } catch {
-      return null;
-    }
-  });
+  const { session, locale, logout } = useMesliteSession();
 
-  useEffect(() => {
-    if (!session) {
-      router.replace("/");
-      return;
-    }
-    if (session.locale) {
-      localStorage.setItem(LANG_KEY, session.locale);
-    }
-  }, [router, session]);
-
-  const copy = useMemo(
-    () => text[session?.locale === "en" ? "en" : "zh"],
-    [session?.locale],
-  );
-
-  const logout = () => {
-    localStorage.removeItem(SESSION_KEY);
-    router.replace("/");
-  };
+  const copy = useMemo(() => text[locale], [locale]);
 
   const goModule = (index: number) => {
-    if (index === 0) {
-      router.push("/meslite/work-orders");
-    }
+    router.push(moduleRoutes[index]);
   };
 
   if (!session) {
@@ -100,8 +74,8 @@ export default function MeslitePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f5f5f2] pb-24 pt-6">
-      <div className="mx-auto w-full max-w-md px-4">
+    <main className="min-h-screen bg-[#f7f7f5] p-4 sm:p-6">
+      <div className="mx-auto max-w-6xl">
         <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-[0_20px_50px_-30px_rgba(0,0,0,0.35)]">
           <p className="text-xs tracking-[0.2em] text-zinc-500">{copy.greeting}</p>
           <div className="mt-1 flex items-start justify-between">
@@ -118,7 +92,7 @@ export default function MeslitePage() {
         </section>
 
         <section className="mt-4 rounded-3xl border border-black/5 bg-white p-4 shadow-[0_20px_50px_-30px_rgba(0,0,0,0.35)]">
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
             {copy.modules.map((moduleName, index) => (
               <button
                 key={moduleName}
@@ -135,32 +109,21 @@ export default function MeslitePage() {
           </div>
         </section>
 
-        <section className="mt-4 grid grid-cols-2 gap-3">
-          {copy.statLabels.map((label) => (
+        <section className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+          {copy.statLabels.map((label, index) => (
             <div
               key={label}
               className="rounded-2xl border border-black/5 bg-white px-4 py-4 shadow-[0_20px_40px_-35px_rgba(0,0,0,0.55)]"
             >
-              <p className="text-3xl font-semibold leading-none text-zinc-900">00</p>
+              <p className="text-3xl font-semibold leading-none text-zinc-900">{copy.statValues[index]}</p>
               <p className="mt-2 text-xs tracking-wide text-zinc-500">{label}</p>
             </div>
           ))}
         </section>
 
-        <section className="mt-4 rounded-3xl border border-black/5 bg-white p-4 shadow-[0_20px_50px_-30px_rgba(0,0,0,0.35)]">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold tracking-tight text-zinc-900">
-              {copy.taskTitle}
-              <span className="ml-1 text-zinc-500">›</span>
-            </h2>
-            <label className="flex items-center gap-2 text-xs text-zinc-600">
-              <input type="checkbox" className="h-4 w-4 rounded border-zinc-300" />
-              {copy.taskFilter}
-            </label>
-          </div>
-        </section>
-
         <section className="mt-4 rounded-3xl border border-black/5 bg-white p-4 text-sm text-zinc-700 shadow-[0_20px_50px_-30px_rgba(0,0,0,0.35)]">
+          <h2 className="text-xl font-semibold tracking-tight text-zinc-900">{copy.overviewTitle}</h2>
+          <p className="mt-2 text-zinc-600">{copy.overviewText}</p>
           <p>
             {copy.account}: <span className="font-medium text-zinc-900">{session.email}</span>
           </p>
@@ -177,29 +140,6 @@ export default function MeslitePage() {
           </button>
         </section>
       </div>
-
-      <nav className="fixed bottom-3 left-0 right-0">
-        <div className="mx-auto grid w-[calc(100%-1.5rem)] max-w-md grid-cols-4 rounded-2xl border border-black/5 bg-white/95 py-2 shadow-lg backdrop-blur">
-          {copy.navItems.map((item, index) => (
-            <button key={item} type="button" className="flex flex-col items-center">
-              <span
-                className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold ${
-                  index === 0 ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-500"
-                }`}
-              >
-                {navIcons[index]}
-              </span>
-              <span
-                className={`mt-1 text-[11px] ${
-                  index === 0 ? "font-medium text-zinc-900" : "text-zinc-500"
-                }`}
-              >
-                {item}
-              </span>
-            </button>
-          ))}
-        </div>
-      </nav>
     </main>
   );
 }
