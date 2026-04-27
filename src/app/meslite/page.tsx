@@ -75,41 +75,44 @@ export default function MeslitePage() {
 
   return (
     <main className="min-h-screen bg-[#f7f7f5] p-4 sm:p-6">
-      <div className="mx-auto max-w-6xl">
-        <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-[0_20px_50px_-30px_rgba(0,0,0,0.35)]">
-          <p className="text-xs tracking-[0.2em] text-zinc-500">{copy.greeting}</p>
-          <div className="mt-1 flex items-start justify-between">
-            <div>
-              <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">{copy.title}</h1>
-              <p className="mt-1 text-xs text-zinc-500">
-                {copy.account}: {session.email}
-              </p>
+      <div className="mx-auto grid max-w-7xl gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+        <aside className="lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:overflow-auto">
+          <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-[0_20px_50px_-30px_rgba(0,0,0,0.35)]">
+            <p className="text-xs tracking-[0.2em] text-zinc-500">{copy.greeting}</p>
+            <div className="mt-1 flex items-start justify-between">
+              <div>
+                <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">{copy.title}</h1>
+                <p className="mt-1 text-xs text-zinc-500">
+                  {copy.account}: {session.email}
+                </p>
+              </div>
+              <span className="rounded-full border border-zinc-200 px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-zinc-600">
+                Premium
+              </span>
             </div>
-            <span className="rounded-full border border-zinc-200 px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-zinc-600">
-              Premium
-            </span>
-          </div>
-        </section>
+          </section>
 
-        <section className="mt-4 rounded-3xl border border-black/5 bg-white p-4 shadow-[0_20px_50px_-30px_rgba(0,0,0,0.35)]">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
-            {copy.modules.map((moduleName, index) => (
-              <button
-                key={moduleName}
-                type="button"
-                onClick={() => goModule(index)}
-                className="group rounded-2xl border border-zinc-100 bg-zinc-50 p-3 text-left transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
-              >
-                <div className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-zinc-300 text-[10px] font-semibold tracking-wider text-zinc-600">
-                  {moduleIcons[index]}
-                </div>
-                <p className="mt-3 text-xs font-medium leading-4 text-zinc-800">{moduleName}</p>
-              </button>
-            ))}
-          </div>
-        </section>
+          <section className="mt-4 rounded-3xl border border-black/5 bg-white p-4 shadow-[0_20px_50px_-30px_rgba(0,0,0,0.35)]">
+            <div className="grid grid-cols-1 gap-3">
+              {copy.modules.map((moduleName, index) => (
+                <button
+                  key={moduleName}
+                  type="button"
+                  onClick={() => goModule(index)}
+                  className="group rounded-2xl border border-zinc-100 bg-zinc-50 p-3 text-left transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
+                >
+                  <div className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-zinc-300 text-[10px] font-semibold tracking-wider text-zinc-600">
+                    {moduleIcons[index]}
+                  </div>
+                  <p className="mt-3 text-xs font-medium leading-4 text-zinc-800">{moduleName}</p>
+                </button>
+              ))}
+            </div>
+          </section>
+        </aside>
 
-        <section className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+        <section>
+          <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {copy.statLabels.map((label, index) => (
             <div
               key={label}
@@ -119,25 +122,26 @@ export default function MeslitePage() {
               <p className="mt-2 text-xs tracking-wide text-zinc-500">{label}</p>
             </div>
           ))}
-        </section>
+          </section>
 
-        <section className="mt-4 rounded-3xl border border-black/5 bg-white p-4 text-sm text-zinc-700 shadow-[0_20px_50px_-30px_rgba(0,0,0,0.35)]">
-          <h2 className="text-xl font-semibold tracking-tight text-zinc-900">{copy.overviewTitle}</h2>
-          <p className="mt-2 text-zinc-600">{copy.overviewText}</p>
-          <p>
-            {copy.account}: <span className="font-medium text-zinc-900">{session.email}</span>
-          </p>
-          <p className="mt-1">
-            {copy.factory}:{" "}
-            <span className="font-medium text-zinc-900">{session.factoryName || "-"}</span>
-          </p>
-          <button
-            type="button"
-            onClick={logout}
-            className="mt-3 rounded-full bg-zinc-900 px-4 py-2 text-xs font-medium text-white transition hover:bg-zinc-800"
-          >
-            {copy.logout}
-          </button>
+          <section className="mt-4 rounded-3xl border border-black/5 bg-white p-4 text-sm text-zinc-700 shadow-[0_20px_50px_-30px_rgba(0,0,0,0.35)]">
+            <h2 className="text-xl font-semibold tracking-tight text-zinc-900">{copy.overviewTitle}</h2>
+            <p className="mt-2 text-zinc-600">{copy.overviewText}</p>
+            <p>
+              {copy.account}: <span className="font-medium text-zinc-900">{session.email}</span>
+            </p>
+            <p className="mt-1">
+              {copy.factory}:{" "}
+              <span className="font-medium text-zinc-900">{session.factoryName || "-"}</span>
+            </p>
+            <button
+              type="button"
+              onClick={logout}
+              className="mt-3 rounded-full bg-zinc-900 px-4 py-2 text-xs font-medium text-white transition hover:bg-zinc-800"
+            >
+              {copy.logout}
+            </button>
+          </section>
         </section>
       </div>
     </main>
