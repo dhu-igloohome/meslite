@@ -2,6 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { FilePenLine, FolderPlus, Trash2 } from "lucide-react";
+import { DangerOutlineButton, PrimaryButton, SecondaryButton } from "@/components/ui/buttons";
+import { CardContainer } from "@/components/ui/card-container";
+import { TextInput } from "@/components/ui/form-elements";
 import { useMesliteSession } from "../../_lib/session";
 
 type ProductCategory = {
@@ -163,84 +167,73 @@ export default function ProductCategoriesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f7f5] p-4 sm:p-6">
-      <div className="mx-auto max-w-4xl">
-        <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-[0_16px_40px_-28px_rgba(0,0,0,.35)]">
-          <button
-            type="button"
-            onClick={() => router.push("/meslite/master-data")}
-            className="mb-3 rounded-full border border-zinc-300 px-3 py-1 text-xs text-zinc-600"
-          >
+    <main className="min-h-screen bg-slate-50 p-4 sm:p-6">
+      <div className="mx-auto max-w-4xl space-y-4">
+        <CardContainer className="p-5">
+          <SecondaryButton onClick={() => router.push("/meslite/master-data")} className="mb-3">
             {copy.backLabel}
-          </button>
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">{copy.title}</h1>
-          <p className="mt-1 text-sm text-zinc-500">{copy.subtitle}</p>
-        </section>
+          </SecondaryButton>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{copy.title}</h1>
+          <p className="mt-1 text-sm text-slate-500">{copy.subtitle}</p>
+        </CardContainer>
 
-        <section className="mt-4 rounded-3xl border border-black/5 bg-white p-5 shadow-[0_16px_40px_-28px_rgba(0,0,0,.35)]">
-          <h2 className="text-lg font-semibold text-zinc-900">{copy.existing}</h2>
+        <CardContainer className="p-5">
+          <h2 className="text-lg font-semibold text-slate-900">{copy.existing}</h2>
           {categories.length === 0 ? (
-            <p className="mt-2 text-sm text-zinc-500">{copy.empty}</p>
+            <p className="mt-2 text-sm text-slate-500">{copy.empty}</p>
           ) : (
             <div className="mt-3 flex flex-wrap gap-2">
               {categories.map((item) => (
                 <span
                   key={item.id}
-                  className="inline-flex items-center gap-2 rounded-full border border-zinc-300 bg-zinc-50 px-3 py-1.5 text-sm text-zinc-700"
+                  className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700"
                 >
                   {item.name}
-                  <button
-                    type="button"
-                    onClick={() => startEdit(item.id)}
-                    className="text-xs text-zinc-500 hover:text-zinc-800"
-                  >
+                  <SecondaryButton type="button" onClick={() => startEdit(item.id)} className="min-h-8 px-2 py-1 text-xs">
+                    <FilePenLine className="h-3.5 w-3.5" />
                     {copy.edit}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeCategory(item.id)}
-                    className="text-xs text-zinc-500 hover:text-rose-600"
-                  >
+                  </SecondaryButton>
+                  <DangerOutlineButton type="button" onClick={() => removeCategory(item.id)} className="min-h-8 px-2 py-1 text-xs">
+                    <Trash2 className="h-3.5 w-3.5" />
                     {copy.remove}
-                  </button>
+                  </DangerOutlineButton>
                 </span>
               ))}
             </div>
           )}
-        </section>
+        </CardContainer>
 
-        <section className="mt-4 rounded-3xl border border-black/5 bg-white p-5 shadow-[0_16px_40px_-28px_rgba(0,0,0,.35)]">
-          <h2 className="text-lg font-semibold text-zinc-900">{editingId ? copy.edit : copy.create}</h2>
+        <CardContainer className="p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <FolderPlus className="h-5 w-5 text-indigo-600" />
+            <h2 className="text-lg font-semibold text-slate-900">{editingId ? copy.edit : copy.create}</h2>
+          </div>
           <form className="mt-3 flex flex-wrap items-center gap-2" onSubmit={createCategory}>
-            <input
+            <TextInput
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={copy.input}
-              className="min-w-72 rounded-xl border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
+              className="min-w-72"
             />
-            <button
-              type="submit"
-              className="rounded-full bg-zinc-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-zinc-800"
-            >
+            <PrimaryButton type="submit">
               {editingId ? copy.update : copy.confirm}
-            </button>
+            </PrimaryButton>
             {editingId ? (
-              <button
+              <SecondaryButton
                 type="button"
                 onClick={() => {
                   setEditingId(null);
                   setName("");
                 }}
-                className="rounded-full border border-zinc-300 px-5 py-2 text-sm text-zinc-700"
               >
                 {copy.cancelEdit}
-              </button>
+              </SecondaryButton>
             ) : null}
           </form>
           {message ? <p className="mt-2 text-sm text-emerald-700">{message}</p> : null}
-        </section>
+        </CardContainer>
       </div>
     </main>
   );

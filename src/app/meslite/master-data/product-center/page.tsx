@@ -2,6 +2,18 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { FolderPlus, PackagePlus } from "lucide-react";
+import { PrimaryButton, SecondaryButton } from "@/components/ui/buttons";
+import { CardContainer } from "@/components/ui/card-container";
+import {
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHead,
+  DataTableHeaderCell,
+  DataTableRow,
+} from "@/components/ui/data-table";
+import { SelectInput, TextAreaInput, TextInput } from "@/components/ui/form-elements";
 import { useMesliteSession } from "../../_lib/session";
 
 type ProductType = "part" | "component" | "auxiliary" | "finished";
@@ -206,88 +218,61 @@ export default function ProductCenterPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f7f5] p-4 sm:p-6">
-      <div className="mx-auto max-w-6xl">
-        <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-[0_16px_40px_-28px_rgba(0,0,0,.35)]">
-          <button
-            type="button"
-            onClick={() => router.push("/meslite/master-data")}
-            className="mb-3 rounded-full border border-zinc-300 px-3 py-1 text-xs text-zinc-600"
-          >
+    <main className="min-h-screen bg-slate-50 p-4 sm:p-6">
+      <div className="mx-auto max-w-6xl space-y-4">
+        <CardContainer className="p-5">
+          <SecondaryButton onClick={() => router.push("/meslite/master-data")} className="mb-3">
             {copy.backLabel}
-          </button>
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">{copy.title}</h1>
-          <p className="mt-1 text-sm text-zinc-500">{copy.subtitle}</p>
-        </section>
+          </SecondaryButton>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{copy.title}</h1>
+          <p className="mt-1 text-sm text-slate-500">{copy.subtitle}</p>
+        </CardContainer>
 
-        <section className="mt-4 rounded-3xl border border-black/5 bg-white p-5 shadow-[0_16px_40px_-28px_rgba(0,0,0,.35)]">
-          <h2 className="text-xl font-semibold text-zinc-900">{copy.createTitle}</h2>
+        <CardContainer className="p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <PackagePlus className="h-5 w-5 text-indigo-600" />
+            <h2 className="text-xl font-semibold text-slate-900">{copy.createTitle}</h2>
+          </div>
 
           <form className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2" onSubmit={saveProduct}>
-            <label className="text-sm text-zinc-700 md:col-span-2">
+            <label className="text-sm text-slate-700 md:col-span-2">
               {copy.imagePath}
-              <input
-                type="text"
-                value={imagePath}
-                onChange={(e) => setImagePath(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
-              />
+              <TextInput type="text" value={imagePath} onChange={(e) => setImagePath(e.target.value)} />
             </label>
 
-            <label className="text-sm text-zinc-700">
+            <label className="text-sm text-slate-700">
               {copy.type}
-              <select
-                value={productType}
-                onChange={(e) => setProductType(e.target.value as ProductType)}
-                className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none focus:border-zinc-500"
-              >
+              <SelectInput value={productType} onChange={(e) => setProductType(e.target.value as ProductType)}>
                 <option value="part">{copy.typeOptions.part}</option>
                 <option value="component">{copy.typeOptions.component}</option>
                 <option value="auxiliary">{copy.typeOptions.auxiliary}</option>
                 <option value="finished">{copy.typeOptions.finished}</option>
-              </select>
+              </SelectInput>
             </label>
 
-            <label className="text-sm text-zinc-700">
+            <label className="text-sm text-slate-700">
               {copy.code}
-              <input
-                type="text"
-                value={productCode}
-                readOnly
-                className="mt-1 w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-2 text-zinc-700"
-              />
+              <TextInput type="text" value={productCode} readOnly className="bg-slate-50 text-slate-700" />
             </label>
 
-            <label className="text-sm text-zinc-700">
+            <label className="text-sm text-slate-700">
               {copy.name}
-              <input
-                type="text"
-                required
-                value={productName}
-                onChange={(e) => setProductName(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
-              />
+              <TextInput type="text" required value={productName} onChange={(e) => setProductName(e.target.value)} />
             </label>
 
-            <label className="text-sm text-zinc-700">
+            <label className="text-sm text-slate-700">
               {copy.spec}
-              <input
-                type="text"
-                required
-                value={productSpec}
-                onChange={(e) => setProductSpec(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
-              />
+              <TextInput type="text" required value={productSpec} onChange={(e) => setProductSpec(e.target.value)} />
             </label>
 
-            <div className="text-sm text-zinc-700 md:col-span-2">
+            <div className="text-sm text-slate-700 md:col-span-2">
               <p>{copy.category}</p>
               <div className="mt-1 flex flex-wrap gap-2">
-                <select
+                <SelectInput
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
                   aria-label={copy.category}
-                  className="min-w-64 rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none focus:border-zinc-500"
+                  className="min-w-64"
                 >
                   <option value="">{copy.category}</option>
                   {categories.map((item) => (
@@ -295,94 +280,76 @@ export default function ProductCenterPage() {
                       {item.name}
                     </option>
                   ))}
-                </select>
-                <button
+                </SelectInput>
+                <SecondaryButton
                   type="button"
                   onClick={() => router.push("/meslite/master-data/product-categories")}
-                  className="rounded-full border border-zinc-300 px-4 py-2 text-xs text-zinc-700"
+                  className="text-xs"
                 >
+                  <FolderPlus className="h-4 w-4" />
                   {copy.openCategorySetup}
-                </button>
+                </SecondaryButton>
               </div>
               {categories.length === 0 ? <p className="mt-2 text-xs text-amber-600">{copy.noCategory}</p> : null}
             </div>
 
-            <label className="text-sm text-zinc-700 md:col-span-2">
+            <label className="text-sm text-slate-700 md:col-span-2">
               {copy.note}
-              <textarea
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                rows={3}
-                className="mt-1 w-full rounded-xl border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
-              />
+              <TextAreaInput value={note} onChange={(e) => setNote(e.target.value)} rows={3} />
             </label>
 
-            <label className="text-sm text-zinc-700 md:col-span-2">
+            <label className="text-sm text-slate-700 md:col-span-2">
               {copy.drawingPath}
-              <input
-                type="text"
-                value={drawingPath}
-                onChange={(e) => setDrawingPath(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
-              />
+              <TextInput type="text" value={drawingPath} onChange={(e) => setDrawingPath(e.target.value)} />
             </label>
 
-            <label className="text-sm text-zinc-700 md:col-span-2">
+            <label className="text-sm text-slate-700 md:col-span-2">
               {copy.processMode}
-              <select
-                value={processMode}
-                onChange={(e) => setProcessMode(e.target.value as ProcessMode)}
-                className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none focus:border-zinc-500"
-              >
+              <SelectInput value={processMode} onChange={(e) => setProcessMode(e.target.value as ProcessMode)}>
                 <option value="sort">{copy.processModes.sort}</option>
                 <option value="add">{copy.processModes.add}</option>
                 <option value="copy">{copy.processModes.copy}</option>
-              </select>
+              </SelectInput>
             </label>
 
             <div className="md:col-span-2">
-              <button
-                type="submit"
-                className="rounded-full bg-zinc-900 px-6 py-2 text-sm font-medium text-white transition hover:bg-zinc-800"
-              >
+              <PrimaryButton type="submit">
                 {copy.save}
-              </button>
+              </PrimaryButton>
               {message ? <p className="mt-2 text-sm text-emerald-700">{message}</p> : null}
             </div>
           </form>
-        </section>
+        </CardContainer>
 
-        <section className="mt-4 rounded-3xl border border-black/5 bg-white p-5 shadow-[0_16px_40px_-28px_rgba(0,0,0,.35)]">
-          <h3 className="text-lg font-semibold text-zinc-900">{copy.productList}</h3>
+        <CardContainer className="p-5">
+          <h3 className="text-lg font-semibold text-slate-900">{copy.productList}</h3>
           {products.length === 0 ? (
-            <p className="mt-2 text-sm text-zinc-500">{copy.emptyList}</p>
+            <p className="mt-2 text-sm text-slate-500">{copy.emptyList}</p>
           ) : (
-            <div className="mt-3 overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="text-zinc-500">
-                  <tr>
-                    <th className="px-2 py-2">Code</th>
-                    <th className="px-2 py-2">Name</th>
-                    <th className="px-2 py-2">Spec</th>
-                    <th className="px-2 py-2">Category</th>
-                    <th className="px-2 py-2">Process</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.map((item) => (
-                    <tr key={item.id} className="border-t border-zinc-100 text-zinc-700">
-                      <td className="px-2 py-2">{item.productCode}</td>
-                      <td className="px-2 py-2">{item.productName}</td>
-                      <td className="px-2 py-2">{item.productSpec}</td>
-                      <td className="px-2 py-2">{item.categoryName || "-"}</td>
-                      <td className="px-2 py-2">{copy.processModes[item.processMode]}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DataTable className="mt-3">
+              <DataTableHead>
+                <tr>
+                  <DataTableHeaderCell>Code</DataTableHeaderCell>
+                  <DataTableHeaderCell>Name</DataTableHeaderCell>
+                  <DataTableHeaderCell>Spec</DataTableHeaderCell>
+                  <DataTableHeaderCell>Category</DataTableHeaderCell>
+                  <DataTableHeaderCell>Process</DataTableHeaderCell>
+                </tr>
+              </DataTableHead>
+              <DataTableBody>
+                {products.map((item, index) => (
+                  <DataTableRow key={item.id} striped={index % 2 === 1}>
+                    <DataTableCell>{item.productCode}</DataTableCell>
+                    <DataTableCell>{item.productName}</DataTableCell>
+                    <DataTableCell>{item.productSpec}</DataTableCell>
+                    <DataTableCell>{item.categoryName || "-"}</DataTableCell>
+                    <DataTableCell>{copy.processModes[item.processMode]}</DataTableCell>
+                  </DataTableRow>
+                ))}
+              </DataTableBody>
+            </DataTable>
           )}
-        </section>
+        </CardContainer>
       </div>
     </main>
   );
