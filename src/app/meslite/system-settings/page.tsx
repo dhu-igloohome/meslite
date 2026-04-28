@@ -46,6 +46,7 @@ type ProcessPlan = {
   id: string;
   processName: string;
   departmentId: string;
+  departmentName?: string;
   defaultWorkers: string[];
 };
 
@@ -102,6 +103,8 @@ const text = {
     editWorker: "编辑",
     departmentInUse: "该部门已被工艺编制引用，暂不可删除。",
     workerInUse: "该人员已被工艺编制引用，暂不可删除。",
+    departmentForceDeleteConfirm: "该部门已被 {count} 条工艺编制引用，确认删除并清理关联吗？",
+    workerForceDeleteConfirm: "该人员已被 {count} 条工艺编制引用，确认删除并从工艺编制中移除吗？",
     invite: "转发邀请好友",
     scanJoin: "扫码加入",
     manualAdd: "手动添加",
@@ -140,6 +143,10 @@ const text = {
     editWorker: "Edit",
     departmentInUse: "This department is referenced by process plans and cannot be deleted.",
     workerInUse: "This worker is referenced by process plans and cannot be deleted.",
+    departmentForceDeleteConfirm:
+      "This department is referenced by {count} process plans. Delete anyway and clean references?",
+    workerForceDeleteConfirm:
+      "This worker is referenced by {count} process plans. Delete anyway and remove from plans?",
     invite: "Forward Invite",
     scanJoin: "Join by Scan",
     manualAdd: "Manual Add",
@@ -341,6 +348,10 @@ export default function SystemSettingsPage() {
     localStorage.setItem(WORKERS_KEY, JSON.stringify(next));
   };
 
+  const saveProcessPlans = (next: ProcessPlan[]) => {
+    localStorage.setItem(PROCESS_PLANS_KEY, JSON.stringify(next));
+  };
+
   const addDepartment = () => {
     const name = newDepartmentName.trim();
     if (!name) {
@@ -357,12 +368,19 @@ export default function SystemSettingsPage() {
 
   const removeDepartment = (id: string) => {
     const plans = readProcessPlans();
-    if (plans.some((item) => item.departmentId === id)) {
-      setMessage(copy.departmentInUse);
-      return;
+    const affectedPlans = plans.filter((item) => item.departmentId === id);
+    if (affectedPlans.length > 0) {
+      const confirmed = window.confirm(
+        copy.departmentForceDeleteConfirm.replace("{count}", String(affectedPlans.length)),
+      );
+      if (!confirmed) {
+        setMessage(copy.departmentInUse);
+        return;
+      }
     }
 
     const target = departments.find((item) => item.id === id);
+    const removedWorkerNames = workers.filter((item) => item.departmentId === id).map((item) => item.name);
     const next = departments.filter((item) => item.id !== id);
     saveDepartments(next);
     if (target) {
@@ -371,6 +389,20 @@ export default function SystemSettingsPage() {
     const filteredWorkers = workers.filter((item) => item.departmentId !== id);
     if (filteredWorkers.length !== workers.length) {
       saveWorkers(filteredWorkers);
+    }
+    if (affectedPlans.length > 0) {
+      const nextPlans = plans.map((item) =>
+        item.departmentId === id
+          ? {
+              ...item,
+              departmentId: "",
+              departmentName: "",
+              defaultWorkers: item.defaultWorkers.filter((name) => !removedWorkerNames.includes(name)),
+            }
+          : item,
+      );
+      saveProcessPlans(nextPlans);
+      appendLog("clean_department_refs", `${target?.name || id} (${affectedPlans.length})`);
     }
     setMessage("");
   };
@@ -412,14 +444,27 @@ export default function SystemSettingsPage() {
       return;
     }
     const plans = readProcessPlans();
-    if (plans.some((item) => item.defaultWorkers.includes(target.name))) {
-      setMessage(copy.workerInUse);
-      return;
+    const affectedPlans = plans.filter((item) => item.defaultWorkers.includes(target.name));
+    if (affectedPlans.length > 0) {
+      const confirmed = window.confirm(copy.workerForceDeleteConfirm.replace("{count}", String(affectedPlans.length)));
+      if (!confirmed) {
+        setMessage(copy.workerInUse);
+        return;
+      }
     }
 
     const next = workers.filter((item) => item.id !== id);
     saveWorkers(next);
     appendLog("remove_worker", target.name);
+    if (affectedPlans.length > 0) {
+      const nextPlans = plans.map((item) =>
+        item.defaultWorkers.includes(target.name)
+          ? { ...item, defaultWorkers: item.defaultWorkers.filter((name) => name !== target.name) }
+          : item,
+      );
+      saveProcessPlans(nextPlans);
+      appendLog("clean_worker_refs", `${target.name} (${affectedPlans.length})`);
+    }
     if (editingWorkerId === id) {
       setEditingWorkerId(null);
       setWorkerName("");
