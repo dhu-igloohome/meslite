@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -84,6 +84,44 @@ const metricSparklines = [
 const moduleIcons = [ClipboardList, Wrench, Factory, Blocks, Cog, QrCode, Settings2];
 const metricIcons = [ClipboardList, Wrench, Factory, AlertTriangle];
 const quickActionRoutes = ["/meslite/work-orders", "/meslite/tasks", "/meslite/reporting"];
+const WORK_ORDERS_KEY = "meslite_work_orders";
+const TASKS_KEY = "meslite_tasks";
+const REPORTS_KEY = "meslite_reports";
+const REPORT_RECORDS_KEY = "meslite_report_records";
+const LOGS_KEY = "meslite_operation_logs";
+
+type WorkOrderRecord = {
+  id: string;
+  workOrderNo: string;
+  dueDate: string;
+  processPlannedQty: number;
+  processName: string;
+  categoryName: string;
+  createdAt: string;
+};
+
+type GenericTaskRecord = {
+  id?: string;
+  name?: string;
+  taskNo?: string;
+  status?: string;
+  createdAt?: string;
+};
+
+type GenericReportRecord = {
+  id?: string;
+  qty?: number;
+  reportQty?: number;
+  createdAt?: string;
+  exception?: string;
+};
+
+type OperationLog = {
+  id?: string;
+  action?: string;
+  detail?: string;
+  createdAt?: string;
+};
 
 function Sparkline({ values, negative = false }: { values: number[]; negative?: boolean }) {
   const width = 100;
@@ -118,6 +156,43 @@ export default function MeslitePage() {
   const pathname = usePathname();
   const { session, locale } = useMesliteSession();
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const [workOrders, setWorkOrders] = useState<WorkOrderRecord[]>([]);
+  const [tasks, setTasks] = useState<GenericTaskRecord[]>([]);
+  const [reports, setReports] = useState<GenericReportRecord[]>([]);
+  const [logs, setLogs] = useState<OperationLog[]>([]);
+
+  useEffect(() => {
+    const safeParseArray = <T,>(value: string | null): T[] => {
+      if (!value) {
+        return [];
+      }
+      try {
+        const parsed = JSON.parse(value) as T[];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    };
+
+    const loadDashboardData = () => {
+      setWorkOrders(safeParseArray<WorkOrderRecord>(localStorage.getItem(WORK_ORDERS_KEY)));
+      setTasks(safeParseArray<GenericTaskRecord>(localStorage.getItem(TASKS_KEY)));
+      const reportsA = safeParseArray<GenericReportRecord>(localStorage.getItem(REPORTS_KEY));
+      const reportsB = safeParseArray<GenericReportRecord>(localStorage.getItem(REPORT_RECORDS_KEY));
+      setReports(reportsA.length > 0 ? reportsA : reportsB);
+      setLogs(safeParseArray<OperationLog>(localStorage.getItem(LOGS_KEY)));
+    };
+
+    loadDashboardData();
+    window.addEventListener("focus", loadDashboardData);
+    window.addEventListener("storage", loadDashboardData);
+    document.addEventListener("visibilitychange", loadDashboardData);
+    return () => {
+      window.removeEventListener("focus", loadDashboardData);
+      window.removeEventListener("storage", loadDashboardData);
+      document.removeEventListener("visibilitychange", loadDashboardData);
+    };
+  }, []);
 
   const copy = useMemo(() => text[locale], [locale]);
   const navItems = copy.modules.map((moduleName, index) => ({
@@ -126,23 +201,59 @@ export default function MeslitePage() {
     Icon: moduleIcons[index],
   }));
   const quickActions = locale === "zh" ? ["新建工单", "创建任务", "新增报工"] : ["New Work Order", "Create Task", "New Report"];
+
+  const todayReportQty = reports.reduce((acc, item) => acc + Number(item.qty ?? item.reportQty ?? 0), 0);
+  const activeTasks = tasks.filter((item) => (item.status || "").toLowerCase() !== "done").length;
+  const pendingOrders = workOrders.length;
+  const totalAlerts =
+    workOrders.filter((item) => item.dueDate && new Date(item.dueDate) < new Date()).length +
+    reports.filter((item) => Boolean(item.exception)).length;
+
+  const statValues = [String(pendingOrders), String(activeTasks), String(todayReportQty), String(totalAlerts)];
+
   const pendingList =
-    locale === "zh"
-      ? ["WO-000129 压铸件交付确认", "WO-000130 CNC二序排产", "WO-000131 钻孔攻牙复检"]
-      : ["WO-000129 Die-cast delivery confirm", "WO-000130 CNC-2 scheduling", "WO-000131 Drill/Tap recheck"];
-  const alertList =
-    locale === "zh"
-      ? ["压铸车间 OEE 低于目标 6%", "CNC 一序待料超过 40 分钟", "工单 WO-000125 交期风险"]
-      : ["Casting line OEE below target by 6%", "CNC-1 waiting material > 40 mins", "Work order WO-000125 at due-date risk"];
+    workOrders.length > 0
+      ? workOrders
+          .slice(-4)
+          .reverse()
+          .map((item) =>
+            locale === "zh"
+              ? `${item.workOrderNo || item.id} ${item.processName || "-"}`
+              : `${item.workOrderNo || item.id} ${item.processName || "-"}`,
+          )
+      : locale === "zh"
+        ? ["暂无待处理工单"]
+        : ["No pending work orders"];
+
+  const alertList = [
+    ...workOrders
+      .filter((item) => item.dueDate && new Date(item.dueDate) < new Date())
+      .slice(0, 2)
+      .map((item) =>
+        locale === "zh"
+          ? `工单 ${item.workOrderNo || item.id} 已超交期`
+          : `Work order ${item.workOrderNo || item.id} is overdue`,
+      ),
+    ...reports
+      .filter((item) => Boolean(item.exception))
+      .slice(0, 2)
+      .map((item) => (locale === "zh" ? `报工异常：${item.exception}` : `Report exception: ${item.exception}`)),
+  ];
+  const normalizedAlertList =
+    alertList.length > 0 ? alertList : locale === "zh" ? ["暂无异常预警"] : ["No active alerts"];
+
   const recentActivity =
-    locale === "zh"
-      ? ["张三 完成 CNC一序 报工 +42", "李四 创建工单 WO-000132", "王五 更新工艺路线（阀体）", "系统同步 产品中心 2 条主数据"]
-      : [
-          "Zhang completed CNC-1 report +42",
-          "Li created work order WO-000132",
-          "Wang updated process route (valve body)",
-          "System synced 2 product master records",
-        ];
+    logs.length > 0
+      ? logs
+          .slice(0, 4)
+          .map((item) =>
+            locale === "zh"
+              ? `${item.action || "操作"}：${item.detail || "-"}`
+              : `${item.action || "Action"}: ${item.detail || "-"}`,
+          )
+      : locale === "zh"
+        ? ["暂无最近活动"]
+        : ["No recent activity"];
 
   const goModule = (route: string) => {
     router.push(route);
@@ -238,7 +349,7 @@ export default function MeslitePage() {
                     <div className="space-y-1">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500 sm:text-xs">{label}</p>
                       <p className="text-2xl font-semibold leading-none tracking-tight text-zinc-900 sm:text-3xl">
-                        {copy.statValues[index]}
+                        {statValues[index] || copy.statValues[index]}
                       </p>
                     </div>
                     <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-100 text-zinc-600">
@@ -298,7 +409,7 @@ export default function MeslitePage() {
                 <AlertTriangle className="h-4 w-4 text-rose-500" />
               </div>
               <ul className="space-y-2">
-                {alertList.map((item) => (
+                {normalizedAlertList.map((item) => (
                   <li key={item} className="rounded-xl border border-rose-100 bg-rose-50/60 px-3 py-2 text-xs text-rose-700">
                     {item}
                   </li>
