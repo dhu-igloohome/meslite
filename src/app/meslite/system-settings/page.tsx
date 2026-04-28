@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMesliteSession } from "../_lib/session";
 
@@ -49,6 +49,10 @@ type ProcessPlan = {
   departmentName?: string;
   defaultWorkers: string[];
 };
+
+type DeleteModalState =
+  | { kind: "department"; departmentId: string; affectedPlans: ProcessPlan[] }
+  | { kind: "worker"; workerId: string; affectedPlans: ProcessPlan[] };
 
 const USERS_KEY = "meslite_users";
 const PENDING_USERS_KEY = "meslite_pending_users";
@@ -101,11 +105,14 @@ const text = {
     updateWorker: "更新人员",
     cancelEditWorker: "取消编辑",
     editWorker: "编辑",
-    departmentInUse: "该部门已被工艺编制引用，暂不可删除。",
-    workerInUse: "该人员已被工艺编制引用，暂不可删除。",
     departmentForceDeleteConfirm: "该部门已被 {count} 条工艺编制引用，确认删除并清理关联吗？",
     workerForceDeleteConfirm: "该人员已被 {count} 条工艺编制引用，确认删除并从工艺编制中移除吗？",
     affectedPlansPrefix: "受影响工艺：",
+    deleteDialogTitleDepartment: "删除部门",
+    deleteDialogTitleWorker: "删除生产人员",
+    confirmDestructiveDelete: "确认删除并清理",
+    cancelDelete: "取消",
+    unnamedPlan: "（未命名工艺）",
     invite: "转发邀请好友",
     scanJoin: "扫码加入",
     manualAdd: "手动添加",
@@ -142,13 +149,16 @@ const text = {
     updateWorker: "Update Worker",
     cancelEditWorker: "Cancel Edit",
     editWorker: "Edit",
-    departmentInUse: "This department is referenced by process plans and cannot be deleted.",
-    workerInUse: "This worker is referenced by process plans and cannot be deleted.",
     departmentForceDeleteConfirm:
       "This department is referenced by {count} process plans. Delete anyway and clean references?",
     workerForceDeleteConfirm:
       "This worker is referenced by {count} process plans. Delete anyway and remove from plans?",
     affectedPlansPrefix: "Affected plans:",
+    deleteDialogTitleDepartment: "Delete department",
+    deleteDialogTitleWorker: "Delete worker",
+    confirmDestructiveDelete: "Delete and clean up",
+    cancelDelete: "Cancel",
+    unnamedPlan: "(Unnamed plan)",
     invite: "Forward Invite",
     scanJoin: "Join by Scan",
     manualAdd: "Manual Add",
@@ -300,6 +310,20 @@ export default function SystemSettingsPage() {
   const [workerDepartmentId, setWorkerDepartmentId] = useState("");
   const [editingWorkerId, setEditingWorkerId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [deleteModal, setDeleteModal] = useState<DeleteModalState | null>(null);
+
+  useEffect(() => {
+    if (!deleteModal) {
+      return;
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setDeleteModal(null);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [deleteModal]);
 
   const readProcessPlans = (): ProcessPlan[] => {
     const raw = localStorage.getItem(PROCESS_PLANS_KEY);
@@ -312,17 +336,6 @@ export default function SystemSettingsPage() {
     } catch {
       return [];
     }
-  };
-
-  const summarizePlanNames = (plans: ProcessPlan[]) => {
-    const names = plans
-      .map((item) => item.processName?.trim())
-      .filter((name): name is string => Boolean(name));
-    if (names.length === 0) {
-      return "-";
-    }
-    const preview = names.slice(0, 5).join("、");
-    return names.length > 5 ? `${preview} ...` : preview;
   };
 
   const appendLog = (action: string, detail: string) => {
@@ -379,20 +392,9 @@ export default function SystemSettingsPage() {
     appendLog("add_department", name);
   };
 
-  const removeDepartment = (id: string) => {
+  const executeRemoveDepartment = (id: string) => {
     const plans = readProcessPlans();
     const affectedPlans = plans.filter((item) => item.departmentId === id);
-    if (affectedPlans.length > 0) {
-      const affectedNames = summarizePlanNames(affectedPlans);
-      const confirmed = window.confirm(
-        `${copy.departmentForceDeleteConfirm.replace("{count}", String(affectedPlans.length))}\n${copy.affectedPlansPrefix} ${affectedNames}`,
-      );
-      if (!confirmed) {
-        setMessage(copy.departmentInUse);
-        return;
-      }
-    }
-
     const target = departments.find((item) => item.id === id);
     const removedWorkerNames = workers.filter((item) => item.departmentId === id).map((item) => item.name);
     const next = departments.filter((item) => item.id !== id);
@@ -419,6 +421,16 @@ export default function SystemSettingsPage() {
       appendLog("clean_department_refs", `${target?.name || id} (${affectedPlans.length})`);
     }
     setMessage("");
+  };
+
+  const requestRemoveDepartment = (id: string) => {
+    const plans = readProcessPlans();
+    const affectedPlans = plans.filter((item) => item.departmentId === id);
+    if (affectedPlans.length > 0) {
+      setDeleteModal({ kind: "department", departmentId: id, affectedPlans });
+      return;
+    }
+    executeRemoveDepartment(id);
   };
 
   const upsertWorker = () => {
@@ -452,24 +464,13 @@ export default function SystemSettingsPage() {
     setWorkerDepartmentId(target.departmentId);
   };
 
-  const removeWorker = (id: string) => {
+  const executeRemoveWorker = (id: string) => {
     const target = workers.find((item) => item.id === id);
     if (!target) {
       return;
     }
     const plans = readProcessPlans();
     const affectedPlans = plans.filter((item) => item.defaultWorkers.includes(target.name));
-    if (affectedPlans.length > 0) {
-      const affectedNames = summarizePlanNames(affectedPlans);
-      const confirmed = window.confirm(
-        `${copy.workerForceDeleteConfirm.replace("{count}", String(affectedPlans.length))}\n${copy.affectedPlansPrefix} ${affectedNames}`,
-      );
-      if (!confirmed) {
-        setMessage(copy.workerInUse);
-        return;
-      }
-    }
-
     const next = workers.filter((item) => item.id !== id);
     saveWorkers(next);
     appendLog("remove_worker", target.name);
@@ -488,6 +489,32 @@ export default function SystemSettingsPage() {
       setWorkerDepartmentId("");
     }
     setMessage("");
+  };
+
+  const requestRemoveWorker = (id: string) => {
+    const target = workers.find((item) => item.id === id);
+    if (!target) {
+      return;
+    }
+    const plans = readProcessPlans();
+    const affectedPlans = plans.filter((item) => item.defaultWorkers.includes(target.name));
+    if (affectedPlans.length > 0) {
+      setDeleteModal({ kind: "worker", workerId: id, affectedPlans });
+      return;
+    }
+    executeRemoveWorker(id);
+  };
+
+  const confirmDeleteModal = () => {
+    if (!deleteModal) {
+      return;
+    }
+    if (deleteModal.kind === "department") {
+      executeRemoveDepartment(deleteModal.departmentId);
+    } else {
+      executeRemoveWorker(deleteModal.workerId);
+    }
+    setDeleteModal(null);
   };
 
   const addPendingUser = (method: PendingUser["method"], manualName?: string) => {
@@ -620,7 +647,7 @@ export default function SystemSettingsPage() {
                   {item.name}
                   <button
                     type="button"
-                    onClick={() => removeDepartment(item.id)}
+                    onClick={() => requestRemoveDepartment(item.id)}
                     className="text-xs text-zinc-500 hover:text-rose-600"
                   >
                     ×
@@ -694,7 +721,7 @@ export default function SystemSettingsPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => removeWorker(item.id)}
+                    onClick={() => requestRemoveWorker(item.id)}
                     className="text-xs text-zinc-500 hover:text-rose-600"
                   >
                     ×
@@ -867,6 +894,60 @@ export default function SystemSettingsPage() {
           {message ? <p className="mt-2 text-sm text-emerald-700">{message}</p> : null}
         </section>
       </div>
+
+      {deleteModal ? (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="meslite-delete-dialog-title"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/40"
+            aria-label={copy.cancelDelete}
+            onClick={() => setDeleteModal(null)}
+          />
+          <div className="relative z-[101] flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-black/10 bg-white shadow-xl">
+            <div className="border-b border-zinc-100 px-5 py-4">
+              <h2 id="meslite-delete-dialog-title" className="text-lg font-semibold text-zinc-900">
+                {deleteModal.kind === "department"
+                  ? copy.deleteDialogTitleDepartment
+                  : copy.deleteDialogTitleWorker}
+              </h2>
+              <p className="mt-2 text-sm text-zinc-600">
+                {deleteModal.kind === "department"
+                  ? copy.departmentForceDeleteConfirm.replace("{count}", String(deleteModal.affectedPlans.length))
+                  : copy.workerForceDeleteConfirm.replace("{count}", String(deleteModal.affectedPlans.length))}
+              </p>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">{copy.affectedPlansPrefix}</p>
+              <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-zinc-800">
+                {deleteModal.affectedPlans.map((plan) => (
+                  <li key={plan.id}>{plan.processName?.trim() || copy.unnamedPlan}</li>
+                ))}
+              </ul>
+            </div>
+            <div className="flex flex-wrap justify-end gap-2 border-t border-zinc-100 px-5 py-4">
+              <button
+                type="button"
+                onClick={() => setDeleteModal(null)}
+                className="rounded-full border border-zinc-300 px-4 py-2 text-sm text-zinc-700"
+              >
+                {copy.cancelDelete}
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteModal}
+                className="rounded-full bg-rose-700 px-4 py-2 text-sm font-medium text-white hover:bg-rose-800"
+              >
+                {copy.confirmDestructiveDelete}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
