@@ -83,6 +83,7 @@ const metricSparklines = [
 
 const moduleIcons = [ClipboardList, Wrench, Factory, Blocks, Cog, QrCode, Settings2];
 const metricIcons = [ClipboardList, Wrench, Factory, AlertTriangle];
+const quickActionRoutes = ["/meslite/work-orders", "/meslite/tasks", "/meslite/reporting"];
 
 function Sparkline({ values, negative = false }: { values: number[]; negative?: boolean }) {
   const width = 100;
@@ -124,6 +125,24 @@ export default function MeslitePage() {
     route: moduleRoutes[index],
     Icon: moduleIcons[index],
   }));
+  const quickActions = locale === "zh" ? ["新建工单", "创建任务", "新增报工"] : ["New Work Order", "Create Task", "New Report"];
+  const pendingList =
+    locale === "zh"
+      ? ["WO-000129 压铸件交付确认", "WO-000130 CNC二序排产", "WO-000131 钻孔攻牙复检"]
+      : ["WO-000129 Die-cast delivery confirm", "WO-000130 CNC-2 scheduling", "WO-000131 Drill/Tap recheck"];
+  const alertList =
+    locale === "zh"
+      ? ["压铸车间 OEE 低于目标 6%", "CNC 一序待料超过 40 分钟", "工单 WO-000125 交期风险"]
+      : ["Casting line OEE below target by 6%", "CNC-1 waiting material > 40 mins", "Work order WO-000125 at due-date risk"];
+  const recentActivity =
+    locale === "zh"
+      ? ["张三 完成 CNC一序 报工 +42", "李四 创建工单 WO-000132", "王五 更新工艺路线（阀体）", "系统同步 产品中心 2 条主数据"]
+      : [
+          "Zhang completed CNC-1 report +42",
+          "Li created work order WO-000132",
+          "Wang updated process route (valve body)",
+          "System synced 2 product master records",
+        ];
 
   const goModule = (route: string) => {
     router.push(route);
@@ -247,7 +266,7 @@ export default function MeslitePage() {
             })}
           </section>
 
-          <section className="mt-4 rounded-3xl border border-zinc-200/80 bg-white p-4 text-sm text-zinc-700 shadow-[0_24px_60px_-40px_rgba(15,23,42,.55)] sm:p-5">
+          <section className="mt-3 rounded-3xl border border-zinc-200/80 bg-white p-4 text-sm text-zinc-700 shadow-[0_24px_60px_-40px_rgba(15,23,42,.55)] sm:p-5">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-lg font-semibold tracking-tight text-zinc-900 sm:text-xl">{copy.overviewTitle}</h2>
               <span className="inline-flex items-center gap-1 text-xs font-medium text-violet-700">
@@ -256,6 +275,70 @@ export default function MeslitePage() {
               </span>
             </div>
             <p className="mt-2 max-w-3xl text-zinc-600">{copy.overviewText}</p>
+          </section>
+
+          <section className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-12">
+            <article className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-[0_18px_40px_-34px_rgba(15,23,42,.45)] xl:col-span-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-zinc-900">{locale === "zh" ? "待处理清单" : "Pending Queue"}</h3>
+                <span className="text-xs text-zinc-500">{pendingList.length}</span>
+              </div>
+              <ul className="space-y-2">
+                {pendingList.map((item) => (
+                  <li key={item} className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-700">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </article>
+
+            <article className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-[0_18px_40px_-34px_rgba(15,23,42,.45)] xl:col-span-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-zinc-900">{locale === "zh" ? "异常预警" : "Alerts"}</h3>
+                <AlertTriangle className="h-4 w-4 text-rose-500" />
+              </div>
+              <ul className="space-y-2">
+                {alertList.map((item) => (
+                  <li key={item} className="rounded-xl border border-rose-100 bg-rose-50/60 px-3 py-2 text-xs text-rose-700">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </article>
+
+            <article className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-[0_18px_40px_-34px_rgba(15,23,42,.45)] xl:col-span-4">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-zinc-900">{locale === "zh" ? "快速操作" : "Quick Actions"}</h3>
+                <ChevronRight className="h-4 w-4 text-zinc-400" />
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                {quickActions.map((action, index) => (
+                  <button
+                    key={action}
+                    type="button"
+                    onClick={() => goModule(quickActionRoutes[index])}
+                    className="flex min-h-11 items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-left text-sm font-medium text-zinc-800 transition hover:bg-white"
+                  >
+                    <span>{action}</span>
+                    <ArrowUpRight className="h-4 w-4 text-zinc-500" />
+                  </button>
+                ))}
+              </div>
+            </article>
+          </section>
+
+          <section className="mt-3 rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-[0_18px_40px_-34px_rgba(15,23,42,.45)]">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-zinc-900">{locale === "zh" ? "最近活动" : "Recent Activity"}</h3>
+              <span className="text-xs text-zinc-500">{locale === "zh" ? "实时更新" : "Live feed"}</span>
+            </div>
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+              {recentActivity.map((item) => (
+                <div key={item} className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-700">
+                  {item}
+                </div>
+              ))}
+            </div>
           </section>
         </section>
         </div>
