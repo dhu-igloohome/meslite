@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Factory, Lock, User } from "lucide-react";
 
 type Locale = "zh" | "en";
 type Mode = "login" | "register";
@@ -258,37 +259,35 @@ export default function Home() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-slate-950 p-6 sm:p-10">
-      <div className="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-cyan-400/30 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-violet-500/30 blur-3xl" />
-      <div className="pointer-events-none absolute left-1/2 top-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-fuchsia-500/10 blur-3xl" />
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-4 sm:p-6">
+      <div className="pointer-events-none fixed left-1/2 top-1/3 h-[32rem] w-[32rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-500/10 blur-3xl" />
 
-      <div className="relative mx-auto w-full max-w-md rounded-3xl border border-white/20 bg-white/85 p-6 shadow-2xl backdrop-blur-md">
+      <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur-xl sm:p-7">
         <div className="mb-6 flex items-start justify-between gap-3">
           <div>
-            <p className="mb-2 inline-block rounded-full bg-indigo-100 px-3 py-1 text-xs font-medium text-indigo-700">
+            <p className="mb-2 inline-block rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-slate-200">
               MESLite
             </p>
-            <h1 className="text-xl font-semibold text-slate-900">{copy.title}</h1>
-            <p className="mt-1 text-sm text-slate-600">{copy.subtitle}</p>
+            <h1 className="text-xl font-semibold text-white">{copy.title}</h1>
+            <p className="mt-1 text-sm text-slate-400">{copy.subtitle}</p>
           </div>
           <button
             type="button"
             onClick={() => persistLanguage(locale === "zh" ? "en" : "zh")}
-            className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-700 transition hover:-translate-y-0.5 hover:bg-slate-50"
+            className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs text-slate-300 transition hover:border-white/30 hover:bg-white/15"
           >
             {copy.switchLanguage}
           </button>
         </div>
 
-        <div className="mb-4 grid grid-cols-2 rounded-xl bg-slate-100 p-1 text-sm">
+        <div className="mb-5 grid grid-cols-2 rounded-xl border border-white/10 bg-white/5 p-1 text-sm">
           <button
             type="button"
             onClick={() => setMode("login")}
             className={`rounded-md py-2 ${
               mode === "login"
-                ? "bg-white text-slate-900 shadow-sm ring-1 ring-indigo-200"
-                : "text-slate-600"
+                ? "bg-white/15 text-white shadow-sm ring-1 ring-white/25"
+                : "text-slate-400"
             }`}
           >
             {copy.loginTab}
@@ -298,65 +297,80 @@ export default function Home() {
             onClick={() => setMode("register")}
             className={`rounded-md py-2 ${
               mode === "register"
-                ? "bg-white text-slate-900 shadow-sm ring-1 ring-indigo-200"
-                : "text-slate-600"
+                ? "bg-white/15 text-white shadow-sm ring-1 ring-white/25"
+                : "text-slate-400"
             }`}
           >
             {copy.registerTab}
           </button>
         </div>
 
-        <form className="space-y-3" onSubmit={submit}>
-          <label className="block text-sm text-slate-700">
+        <form className="space-y-4" onSubmit={submit}>
+          <label className="block text-sm text-slate-300">
             {mode === "login" ? copy.loginAccount : copy.registerEmail}
-            <input
-              type="text"
-              required
-              value={account}
-              onChange={(e) => setAccount(e.target.value)}
-              placeholder={
-                mode === "login" ? copy.loginPlaceholder : copy.registerEmailPlaceholder
-              }
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-            />
-          </label>
-
-          <label className="block text-sm text-slate-700">
-            {copy.password}
-            <input
-              type="password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-            />
-          </label>
-
-          {mode === "register" && (
-            <label className="block text-sm text-slate-700">
-              {copy.factoryName}
+            <div className="relative mt-1">
+              <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 required
-                value={factoryName}
-                onChange={(e) => setFactoryName(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                value={account}
+                onChange={(e) => setAccount(e.target.value)}
+                placeholder={
+                  mode === "login" ? copy.loginPlaceholder : copy.registerEmailPlaceholder
+                }
+                className="w-full rounded-xl border border-white/15 bg-white/5 py-2.5 pl-9 pr-3 text-sm text-white placeholder:text-slate-500 outline-none transition focus:ring-2 focus:ring-blue-500/50"
               />
+            </div>
+          </label>
+
+          <label className="block text-sm text-slate-300">
+            {copy.password}
+            <div className="relative mt-1">
+              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-xl border border-white/15 bg-white/5 py-2.5 pl-9 pr-3 text-sm text-white placeholder:text-slate-500 outline-none transition focus:ring-2 focus:ring-blue-500/50"
+              />
+            </div>
+          </label>
+
+          {mode === "register" && (
+            <label className="block text-sm text-slate-300">
+              {copy.factoryName}
+              <div className="relative mt-1">
+                <Factory className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  required
+                  value={factoryName}
+                  onChange={(e) => setFactoryName(e.target.value)}
+                  className="w-full rounded-xl border border-white/15 bg-white/5 py-2.5 pl-9 pr-3 text-sm text-white placeholder:text-slate-500 outline-none transition focus:ring-2 focus:ring-blue-500/50"
+                />
+              </div>
             </label>
           )}
 
           <button
             type="submit"
-            className="mt-2 w-full rounded-xl bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-violet-500/25 transition hover:-translate-y-0.5 hover:brightness-105"
+            className="mt-2 w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-900/30 transition hover:-translate-y-0.5 hover:shadow-blue-700/35"
           >
             {mode === "login" ? copy.submitLogin : copy.submitRegister}
           </button>
         </form>
 
         {message ? (
-          <p className="mt-4 rounded-xl bg-indigo-50 px-3 py-2 text-sm text-indigo-700">{message}</p>
+          <p className="mt-4 rounded-xl border border-blue-400/30 bg-blue-500/10 px-3 py-2 text-sm text-blue-200">
+            {message}
+          </p>
         ) : null}
+
+        <div className="mt-6 border-t border-white/10 pt-3 text-center text-xs text-slate-500">
+          v2.0 | About | Help
+        </div>
       </div>
     </main>
   );
