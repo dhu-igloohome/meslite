@@ -50,11 +50,11 @@ const text = {
     workerPlaceholder: "请输入人员名称",
     save: "保存",
     saveOk: "工艺编制保存成功。",
-    backLabel: "返回基础数据",
   },
   en: {
     title: "Process Planning",
     subtitle: "Review existing plans and create a new process plan.",
+    backLabel: "Back to Master Data",
     existingList: "Existing Process Plans",
     empty: "No process plans yet",
     createTitle: "Create New Process Plan",
@@ -77,7 +77,6 @@ const text = {
     workerPlaceholder: "Enter worker name",
     save: "Save",
     saveOk: "Process plan saved.",
-    backLabel: "Back to Master Data",
   },
 };
 

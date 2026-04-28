@@ -85,7 +85,6 @@ const text = {
     productName: "产品名称",
     processName: "工序名称",
     createdAt: "创建时间",
-    backLabel: "返回首页",
   },
   en: {
     title: "Order / Work Order Management",
@@ -117,7 +116,6 @@ const text = {
     productName: "Product Name",
     processName: "Process Name",
     createdAt: "Created At",
-    backLabel: "Back to Dashboard",
   },
 };
 
