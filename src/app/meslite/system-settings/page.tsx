@@ -31,9 +31,15 @@ type OperationLog = {
   createdAt: string;
 };
 
+type Department = {
+  id: string;
+  name: string;
+};
+
 const USERS_KEY = "meslite_users";
 const PENDING_USERS_KEY = "meslite_pending_users";
 const LOGS_KEY = "meslite_operation_logs";
+const DEPARTMENTS_KEY = "meslite_departments";
 
 const PRESERVE_KEYS = [
   "meslite_team_settings",
@@ -68,6 +74,9 @@ const text = {
     subtitle: "用户与权限管理、审批加入、操作日志与初始化。",
     backLabel: "返回首页",
     addUser: "添加用户",
+    departmentSettings: "部门管理",
+    addDepartment: "新增部门",
+    departmentNamePlaceholder: "输入部门名称",
     invite: "转发邀请好友",
     scanJoin: "扫码加入",
     manualAdd: "手动添加",
@@ -94,6 +103,9 @@ const text = {
     subtitle: "User permissions, join approval, operation logs and data initialization.",
     backLabel: "Back to Dashboard",
     addUser: "Add User",
+    departmentSettings: "Department Management",
+    addDepartment: "Add Department",
+    departmentNamePlaceholder: "Enter department name",
     invite: "Forward Invite",
     scanJoin: "Join by Scan",
     manualAdd: "Manual Add",
@@ -210,6 +222,22 @@ export default function SystemSettingsPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [department, setDepartment] = useState("");
+  const [departments, setDepartments] = useState<Department[]>(() => {
+    if (typeof window === "undefined") {
+      return [];
+    }
+    const raw = localStorage.getItem(DEPARTMENTS_KEY);
+    if (!raw) {
+      return [];
+    }
+    try {
+      const parsed = JSON.parse(raw) as Department[];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
+  const [newDepartmentName, setNewDepartmentName] = useState("");
   const [message, setMessage] = useState("");
 
   const appendLog = (action: string, detail: string) => {
@@ -236,6 +264,34 @@ export default function SystemSettingsPage() {
   const savePendingUsers = (next: PendingUser[]) => {
     setPendingUsers(next);
     localStorage.setItem(PENDING_USERS_KEY, JSON.stringify(next));
+  };
+
+  const saveDepartments = (next: Department[]) => {
+    setDepartments(next);
+    localStorage.setItem(DEPARTMENTS_KEY, JSON.stringify(next));
+  };
+
+  const addDepartment = () => {
+    const name = newDepartmentName.trim();
+    if (!name) {
+      return;
+    }
+    if (departments.some((item) => item.name === name)) {
+      return;
+    }
+    const next = [...departments, { id: `dept_${Date.now()}`, name }];
+    saveDepartments(next);
+    setNewDepartmentName("");
+    appendLog("add_department", name);
+  };
+
+  const removeDepartment = (id: string) => {
+    const target = departments.find((item) => item.id === id);
+    const next = departments.filter((item) => item.id !== id);
+    saveDepartments(next);
+    if (target) {
+      appendLog("remove_department", target.name);
+    }
   };
 
   const addPendingUser = (method: PendingUser["method"], manualName?: string) => {
@@ -336,6 +392,47 @@ export default function SystemSettingsPage() {
           </button>
           <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">{copy.title}</h1>
           <p className="mt-1 text-sm text-zinc-500">{copy.subtitle}</p>
+        </section>
+
+        <section className="mt-4 rounded-3xl border border-black/5 bg-white p-5">
+          <h2 className="text-lg font-semibold text-zinc-900">{copy.departmentSettings}</h2>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <input
+              type="text"
+              value={newDepartmentName}
+              onChange={(e) => setNewDepartmentName(e.target.value)}
+              placeholder={copy.departmentNamePlaceholder}
+              className="min-w-64 rounded-xl border border-zinc-300 px-3 py-2 text-sm"
+            />
+            <button
+              type="button"
+              onClick={addDepartment}
+              className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white"
+            >
+              {copy.addDepartment}
+            </button>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {departments.length === 0 ? (
+              <p className="text-sm text-zinc-500">-</p>
+            ) : (
+              departments.map((item) => (
+                <span
+                  key={item.id}
+                  className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm text-zinc-700"
+                >
+                  {item.name}
+                  <button
+                    type="button"
+                    onClick={() => removeDepartment(item.id)}
+                    className="text-xs text-zinc-500 hover:text-rose-600"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))
+            )}
+          </div>
         </section>
 
         <section className="mt-4 rounded-3xl border border-black/5 bg-white p-5">
@@ -445,6 +542,7 @@ export default function SystemSettingsPage() {
                         type="checkbox"
                         checked={user.workOrderView}
                         onChange={(e) => updatePermission(user.id, "workOrderView", e.target.checked)}
+                        aria-label={`${copy.workOrderPermission}-${user.name}`}
                       />
                     </td>
                     <td className="px-2 py-2">
@@ -452,6 +550,7 @@ export default function SystemSettingsPage() {
                         type="checkbox"
                         checked={user.reportView}
                         onChange={(e) => updatePermission(user.id, "reportView", e.target.checked)}
+                        aria-label={`${copy.reportPermission}-${user.name}`}
                       />
                     </td>
                     <td className="px-2 py-2">
@@ -459,6 +558,7 @@ export default function SystemSettingsPage() {
                         type="checkbox"
                         checked={user.userOperation}
                         onChange={(e) => updatePermission(user.id, "userOperation", e.target.checked)}
+                        aria-label={`${copy.operationPermission}-${user.name}`}
                       />
                     </td>
                   </tr>

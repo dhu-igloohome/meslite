@@ -40,10 +40,7 @@ const text = {
     reportFactor: "报工系数（%）",
     reportHint: "创建订单/工单时，计划数量 * 报工系数 = 该工序计划数量。",
     department: "生产部门",
-    setDepartment: "新增部门",
-    newDepartment: "新建部门",
-    departmentName: "部门名称",
-    confirmDepartment: "确认",
+    addDepartmentInSettings: "去系统设置新增部门",
     productionMinutes: "生产工时（分钟）",
     workers: "生产人员",
     addWorker: "+ 添加生产人员",
@@ -74,10 +71,7 @@ const text = {
     reportHint:
       "When creating order/work order, planned quantity * reporting factor = this process planned quantity.",
     department: "Production Department",
-    setDepartment: "Add Department",
-    newDepartment: "Create Department",
-    departmentName: "Department Name",
-    confirmDepartment: "Confirm",
+    addDepartmentInSettings: "Add departments in System Settings",
     productionMinutes: "Production Time (minutes)",
     workers: "Production Workers",
     addWorker: "+ Add Worker",
@@ -131,9 +125,6 @@ export default function ProcessPlanningPage() {
     }
   });
 
-  const [showDepartmentEditor, setShowDepartmentEditor] = useState(false);
-  const [newDepartmentName, setNewDepartmentName] = useState("");
-
   const [processName, setProcessName] = useState("");
   const [note, setNote] = useState("");
   const [standardConfig, setStandardConfig] = useState(true);
@@ -144,27 +135,9 @@ export default function ProcessPlanningPage() {
   const [message, setMessage] = useState("");
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
 
-  const saveDepartments = (next: Department[]) => {
-    setDepartments(next);
-    localStorage.setItem(DEPARTMENTS_KEY, JSON.stringify(next));
-  };
-
   const savePlans = (next: ProcessPlan[]) => {
     setPlans(next);
     localStorage.setItem(PROCESS_PLANS_KEY, JSON.stringify(next));
-  };
-
-  const createDepartment = () => {
-    const name = newDepartmentName.trim();
-    if (!name) {
-      return;
-    }
-    const item: Department = { id: `dept_${Date.now()}`, name };
-    const next = [...departments, item];
-    saveDepartments(next);
-    setDepartmentId(item.id);
-    setNewDepartmentName("");
-    setShowDepartmentEditor(false);
   };
 
   const updateWorker = (index: number, value: string) => {
@@ -364,35 +337,13 @@ export default function ProcessPlanningPage() {
                 </select>
                 <button
                   type="button"
-                  onClick={() => setShowDepartmentEditor((prev) => !prev)}
+                  onClick={() => router.push("/meslite/system-settings")}
                   className="rounded-full border border-zinc-300 px-4 py-2 text-xs text-zinc-700"
                 >
-                  {copy.setDepartment}
+                  {copy.addDepartmentInSettings}
                 </button>
               </div>
             </div>
-
-            {showDepartmentEditor ? (
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3 md:col-span-2">
-                <p className="text-sm font-medium text-zinc-800">{copy.newDepartment}</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <input
-                    type="text"
-                    value={newDepartmentName}
-                    onChange={(e) => setNewDepartmentName(e.target.value)}
-                    placeholder={copy.departmentName}
-                    className="min-w-64 rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={createDepartment}
-                    className="rounded-full bg-zinc-900 px-4 py-2 text-xs font-medium text-white"
-                  >
-                    {copy.confirmDepartment}
-                  </button>
-                </div>
-              </div>
-            ) : null}
 
             <label className="text-sm text-zinc-700">
               {copy.productionMinutes}
