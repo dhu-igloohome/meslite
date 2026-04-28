@@ -36,16 +36,24 @@ type Department = {
   name: string;
 };
 
+type Worker = {
+  id: string;
+  name: string;
+  departmentId: string;
+};
+
 const USERS_KEY = "meslite_users";
 const PENDING_USERS_KEY = "meslite_pending_users";
 const LOGS_KEY = "meslite_operation_logs";
 const DEPARTMENTS_KEY = "meslite_departments";
+const WORKERS_KEY = "meslite_workers";
 
 const PRESERVE_KEYS = [
   "meslite_team_settings",
   USERS_KEY,
   PENDING_USERS_KEY,
   "meslite_departments",
+  WORKERS_KEY,
   "meslite_process_plans",
   "meslite_defect_categories",
   "meslite_order_workorder_categories",
@@ -77,6 +85,13 @@ const text = {
     departmentSettings: "部门管理",
     addDepartment: "新增部门",
     departmentNamePlaceholder: "输入部门名称",
+    workerSettings: "生产人员管理",
+    workerNamePlaceholder: "输入人员名称",
+    workerDepartmentPlaceholder: "选择所属部门",
+    addWorker: "新增人员",
+    updateWorker: "更新人员",
+    cancelEditWorker: "取消编辑",
+    editWorker: "编辑",
     invite: "转发邀请好友",
     scanJoin: "扫码加入",
     manualAdd: "手动添加",
@@ -106,6 +121,13 @@ const text = {
     departmentSettings: "Department Management",
     addDepartment: "Add Department",
     departmentNamePlaceholder: "Enter department name",
+    workerSettings: "Production Worker Management",
+    workerNamePlaceholder: "Enter worker name",
+    workerDepartmentPlaceholder: "Select department",
+    addWorker: "Add Worker",
+    updateWorker: "Update Worker",
+    cancelEditWorker: "Cancel Edit",
+    editWorker: "Edit",
     invite: "Forward Invite",
     scanJoin: "Join by Scan",
     manualAdd: "Manual Add",
@@ -238,6 +260,24 @@ export default function SystemSettingsPage() {
     }
   });
   const [newDepartmentName, setNewDepartmentName] = useState("");
+  const [workers, setWorkers] = useState<Worker[]>(() => {
+    if (typeof window === "undefined") {
+      return [];
+    }
+    const raw = localStorage.getItem(WORKERS_KEY);
+    if (!raw) {
+      return [];
+    }
+    try {
+      const parsed = JSON.parse(raw) as Worker[];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
+  const [workerName, setWorkerName] = useState("");
+  const [workerDepartmentId, setWorkerDepartmentId] = useState("");
+  const [editingWorkerId, setEditingWorkerId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
   const appendLog = (action: string, detail: string) => {
@@ -271,6 +311,11 @@ export default function SystemSettingsPage() {
     localStorage.setItem(DEPARTMENTS_KEY, JSON.stringify(next));
   };
 
+  const saveWorkers = (next: Worker[]) => {
+    setWorkers(next);
+    localStorage.setItem(WORKERS_KEY, JSON.stringify(next));
+  };
+
   const addDepartment = () => {
     const name = newDepartmentName.trim();
     if (!name) {
@@ -291,6 +336,55 @@ export default function SystemSettingsPage() {
     saveDepartments(next);
     if (target) {
       appendLog("remove_department", target.name);
+    }
+    const filteredWorkers = workers.filter((item) => item.departmentId !== id);
+    if (filteredWorkers.length !== workers.length) {
+      saveWorkers(filteredWorkers);
+    }
+  };
+
+  const upsertWorker = () => {
+    const name = workerName.trim();
+    if (!name || !workerDepartmentId) {
+      return;
+    }
+    if (editingWorkerId) {
+      const next = workers.map((item) =>
+        item.id === editingWorkerId ? { ...item, name, departmentId: workerDepartmentId } : item,
+      );
+      saveWorkers(next);
+      appendLog("update_worker", name);
+    } else {
+      const next = [...workers, { id: `worker_${Date.now()}`, name, departmentId: workerDepartmentId }];
+      saveWorkers(next);
+      appendLog("add_worker", name);
+    }
+    setWorkerName("");
+    setWorkerDepartmentId("");
+    setEditingWorkerId(null);
+  };
+
+  const startEditWorker = (id: string) => {
+    const target = workers.find((item) => item.id === id);
+    if (!target) {
+      return;
+    }
+    setEditingWorkerId(target.id);
+    setWorkerName(target.name);
+    setWorkerDepartmentId(target.departmentId);
+  };
+
+  const removeWorker = (id: string) => {
+    const target = workers.find((item) => item.id === id);
+    const next = workers.filter((item) => item.id !== id);
+    saveWorkers(next);
+    if (target) {
+      appendLog("remove_worker", target.name);
+    }
+    if (editingWorkerId === id) {
+      setEditingWorkerId(null);
+      setWorkerName("");
+      setWorkerDepartmentId("");
     }
   };
 
@@ -425,6 +519,80 @@ export default function SystemSettingsPage() {
                   <button
                     type="button"
                     onClick={() => removeDepartment(item.id)}
+                    className="text-xs text-zinc-500 hover:text-rose-600"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section className="mt-4 rounded-3xl border border-black/5 bg-white p-5">
+          <h2 className="text-lg font-semibold text-zinc-900">{copy.workerSettings}</h2>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <input
+              type="text"
+              value={workerName}
+              onChange={(e) => setWorkerName(e.target.value)}
+              placeholder={copy.workerNamePlaceholder}
+              className="min-w-56 rounded-xl border border-zinc-300 px-3 py-2 text-sm"
+            />
+            <select
+              value={workerDepartmentId}
+              onChange={(e) => setWorkerDepartmentId(e.target.value)}
+              aria-label={copy.workerDepartmentPlaceholder}
+              className="min-w-56 rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm"
+            >
+              <option value="">{copy.workerDepartmentPlaceholder}</option>
+              {departments.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={upsertWorker}
+              className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white"
+            >
+              {editingWorkerId ? copy.updateWorker : copy.addWorker}
+            </button>
+            {editingWorkerId ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingWorkerId(null);
+                  setWorkerName("");
+                  setWorkerDepartmentId("");
+                }}
+                className="rounded-full border border-zinc-300 px-4 py-2 text-sm text-zinc-700"
+              >
+                {copy.cancelEditWorker}
+              </button>
+            ) : null}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {workers.length === 0 ? (
+              <p className="text-sm text-zinc-500">-</p>
+            ) : (
+              workers.map((item) => (
+                <span
+                  key={item.id}
+                  className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm text-zinc-700"
+                >
+                  {item.name} · {departments.find((dep) => dep.id === item.departmentId)?.name || "-"}
+                  <button
+                    type="button"
+                    onClick={() => startEditWorker(item.id)}
+                    className="text-xs text-zinc-500 hover:text-zinc-800"
+                  >
+                    {copy.editWorker}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeWorker(item.id)}
                     className="text-xs text-zinc-500 hover:text-rose-600"
                   >
                     ×

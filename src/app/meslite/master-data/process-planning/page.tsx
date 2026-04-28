@@ -22,8 +22,15 @@ type ProcessPlan = {
   createdAt: string;
 };
 
+type WorkerOption = {
+  id: string;
+  name: string;
+  departmentId: string;
+};
+
 const DEPARTMENTS_KEY = "meslite_departments";
 const PROCESS_PLANS_KEY = "meslite_process_plans";
+const WORKERS_KEY = "meslite_workers";
 
 const text = {
   zh: {
@@ -43,8 +50,9 @@ const text = {
     addDepartmentInSettings: "去系统设置新增部门",
     productionMinutes: "生产工时（分钟）",
     workers: "生产人员",
-    addWorker: "+ 添加生产人员",
-    workerPlaceholder: "请输入人员名称",
+    selectWorkersHint: "点击选择系统设置中的生产人员；选错可点击已选项删除。",
+    noWorkers: "当前部门暂无可选人员，请先去系统设置维护。",
+    selectedWorkers: "已选择人员",
     save: "保存",
     update: "更新",
     edit: "编辑",
@@ -74,8 +82,9 @@ const text = {
     addDepartmentInSettings: "Add departments in System Settings",
     productionMinutes: "Production Time (minutes)",
     workers: "Production Workers",
-    addWorker: "+ Add Worker",
-    workerPlaceholder: "Enter worker name",
+    selectWorkersHint: "Select workers from System Settings. Click selected item to remove.",
+    noWorkers: "No workers available for this department. Configure in System Settings first.",
+    selectedWorkers: "Selected Workers",
     save: "Save",
     update: "Update",
     edit: "Edit",
@@ -124,6 +133,21 @@ export default function ProcessPlanningPage() {
       return [];
     }
   });
+  const [workerOptions] = useState<WorkerOption[]>(() => {
+    if (typeof window === "undefined") {
+      return [];
+    }
+    const raw = window.localStorage.getItem(WORKERS_KEY);
+    if (!raw) {
+      return [];
+    }
+    try {
+      const parsed = JSON.parse(raw) as WorkerOption[];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
 
   const [processName, setProcessName] = useState("");
   const [note, setNote] = useState("");
@@ -131,7 +155,7 @@ export default function ProcessPlanningPage() {
   const [reportFactor, setReportFactor] = useState(100);
   const [departmentId, setDepartmentId] = useState("");
   const [productionMinutes, setProductionMinutes] = useState(0);
-  const [workers, setWorkers] = useState<string[]>([""]);
+  const [workers, setWorkers] = useState<string[]>([]);
   const [message, setMessage] = useState("");
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
 
@@ -140,12 +164,8 @@ export default function ProcessPlanningPage() {
     localStorage.setItem(PROCESS_PLANS_KEY, JSON.stringify(next));
   };
 
-  const updateWorker = (index: number, value: string) => {
-    setWorkers((prev) => prev.map((item, i) => (i === index ? value : item)));
-  };
-
-  const addWorker = () => {
-    setWorkers((prev) => [...prev, ""]);
+  const toggleWorker = (name: string) => {
+    setWorkers((prev) => (prev.includes(name) ? prev.filter((item) => item !== name) : [...prev, name]));
   };
 
   const resetForm = () => {
@@ -155,7 +175,7 @@ export default function ProcessPlanningPage() {
     setReportFactor(100);
     setDepartmentId("");
     setProductionMinutes(0);
-    setWorkers([""]);
+    setWorkers([]);
     setEditingPlanId(null);
   };
 
@@ -166,7 +186,7 @@ export default function ProcessPlanningPage() {
     setReportFactor(plan.reportFactor);
     setDepartmentId(plan.departmentId);
     setProductionMinutes(plan.productionMinutes);
-    setWorkers(plan.defaultWorkers.length > 0 ? plan.defaultWorkers : [""]);
+    setWorkers(plan.defaultWorkers);
     setEditingPlanId(plan.id);
     setMessage("");
   };
@@ -324,7 +344,18 @@ export default function ProcessPlanningPage() {
               <div className="mt-1 flex flex-wrap gap-2">
                 <select
                   value={departmentId}
-                  onChange={(e) => setDepartmentId(e.target.value)}
+                  onChange={(e) => {
+                    const nextDepartmentId = e.target.value;
+                    setDepartmentId(nextDepartmentId);
+                    setWorkers((prev) =>
+                      prev.filter((name) =>
+                        workerOptions.some(
+                          (option) =>
+                            option.name === name && (!nextDepartmentId || option.departmentId === nextDepartmentId),
+                        ),
+                      ),
+                    );
+                  }}
                   aria-label={copy.department}
                   className="min-w-64 rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none focus:border-zinc-500"
                 >
@@ -359,25 +390,47 @@ export default function ProcessPlanningPage() {
 
             <div className="text-sm text-zinc-700 md:col-span-2">
               <p>{copy.workers}</p>
-              <div className="mt-1 grid gap-2">
-                {workers.map((worker, index) => (
-                  <input
-                    key={`${index}_${worker}`}
-                    type="text"
-                    value={worker}
-                    onChange={(e) => updateWorker(index, e.target.value)}
-                    placeholder={copy.workerPlaceholder}
-                    className="rounded-xl border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
-                  />
-                ))}
+              <p className="mt-1 text-xs text-zinc-500">{copy.selectWorkersHint}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {workerOptions
+                  .filter((item) => !departmentId || item.departmentId === departmentId)
+                  .map((item) => {
+                    const selected = workers.includes(item.name);
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => toggleWorker(item.name)}
+                        className={`rounded-full border px-3 py-1.5 text-xs transition ${
+                          selected
+                            ? "border-zinc-900 bg-zinc-900 text-white"
+                            : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400"
+                        }`}
+                      >
+                        {item.name}
+                      </button>
+                    );
+                  })}
               </div>
-              <button
-                type="button"
-                onClick={addWorker}
-                className="mt-2 rounded-full border border-zinc-300 px-4 py-1.5 text-xs text-zinc-700"
-              >
-                {copy.addWorker}
-              </button>
+              {workerOptions.filter((item) => !departmentId || item.departmentId === departmentId).length === 0 ? (
+                <p className="mt-2 text-xs text-amber-700">{copy.noWorkers}</p>
+              ) : null}
+
+              {workers.length > 0 ? (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-zinc-500">{copy.selectedWorkers}:</span>
+                  {workers.map((worker) => (
+                    <button
+                      key={worker}
+                      type="button"
+                      onClick={() => toggleWorker(worker)}
+                      className="rounded-full border border-zinc-300 bg-zinc-100 px-3 py-1 text-xs text-zinc-700"
+                    >
+                      {worker} ×
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </div>
 
             <label className="text-sm text-zinc-700 md:col-span-2">
