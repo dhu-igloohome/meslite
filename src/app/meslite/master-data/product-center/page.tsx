@@ -50,10 +50,7 @@ const text = {
     spec: "产品规格",
     category: "产品分类",
     noCategory: "暂无产品分类，请先创建分类。",
-    openCategorySetup: "设置产品分类",
-    createCategory: "创建产品分类",
-    categoryName: "产品分类名称",
-    confirmCategory: "确认创建分类",
+    openCategorySetup: "新增产品分类",
     note: "备注",
     drawingPath: "产品图纸路径或 URL",
     processMode: "工序编制",
@@ -85,10 +82,7 @@ const text = {
     spec: "Product spec",
     category: "Product category",
     noCategory: "No categories yet. Please create one first.",
-    openCategorySetup: "Configure Categories",
-    createCategory: "Create Product Category",
-    categoryName: "Category name",
-    confirmCategory: "Create Category",
+    openCategorySetup: "Add Product Category",
     note: "Note",
     drawingPath: "Product drawing path or URL",
     processMode: "Process planning",
@@ -157,9 +151,6 @@ export default function ProductCenterPage() {
       return [];
     }
   });
-  const [showCategoryEditor, setShowCategoryEditor] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
-
   const [productType, setProductType] = useState<ProductType>("part");
   const [imagePath, setImagePath] = useState("");
   const [productName, setProductName] = useState("");
@@ -179,22 +170,6 @@ export default function ProductCenterPage() {
   const saveProducts = (nextProducts: ProductRecord[]) => {
     setProducts(nextProducts);
     localStorage.setItem(PRODUCTS_KEY, JSON.stringify(nextProducts));
-  };
-
-  const createCategory = () => {
-    const name = newCategoryName.trim();
-    if (!name) {
-      return;
-    }
-    const item: ProductCategory = {
-      id: `cat_${Date.now()}`,
-      name,
-    };
-    const nextCategories = [...categories, item];
-    saveCategories(nextCategories);
-    setCategoryId(item.id);
-    setNewCategoryName("");
-    setShowCategoryEditor(false);
   };
 
   const saveProduct = (e: React.FormEvent<HTMLFormElement>) => {
@@ -311,6 +286,7 @@ export default function ProductCenterPage() {
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
+                  aria-label={copy.category}
                   className="min-w-64 rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none focus:border-zinc-500"
                 >
                   <option value="">{copy.category}</option>
@@ -322,7 +298,7 @@ export default function ProductCenterPage() {
                 </select>
                 <button
                   type="button"
-                  onClick={() => setShowCategoryEditor((prev) => !prev)}
+                  onClick={() => router.push("/meslite/master-data/product-categories")}
                   className="rounded-full border border-zinc-300 px-4 py-2 text-xs text-zinc-700"
                 >
                   {copy.openCategorySetup}
@@ -330,28 +306,6 @@ export default function ProductCenterPage() {
               </div>
               {categories.length === 0 ? <p className="mt-2 text-xs text-amber-600">{copy.noCategory}</p> : null}
             </div>
-
-            {showCategoryEditor ? (
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3 md:col-span-2">
-                <p className="text-sm font-medium text-zinc-800">{copy.createCategory}</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <input
-                    type="text"
-                    value={newCategoryName}
-                    onChange={(e) => setNewCategoryName(e.target.value)}
-                    placeholder={copy.categoryName}
-                    className="min-w-64 rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={createCategory}
-                    className="rounded-full bg-zinc-900 px-4 py-2 text-xs font-medium text-white"
-                  >
-                    {copy.confirmCategory}
-                  </button>
-                </div>
-              </div>
-            ) : null}
 
             <label className="text-sm text-zinc-700 md:col-span-2">
               {copy.note}
