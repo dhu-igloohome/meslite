@@ -49,7 +49,14 @@ const text = {
     addWorker: "+ 添加生产人员",
     workerPlaceholder: "请输入人员名称",
     save: "保存",
+    update: "更新",
+    edit: "编辑",
+    remove: "删除",
+    actions: "操作",
+    cancelEdit: "取消编辑",
+    deleteConfirm: "确认删除该工艺编制吗？",
     saveOk: "工艺编制保存成功。",
+    updateOk: "工艺编制更新成功。",
   },
   en: {
     title: "Process Planning",
@@ -76,7 +83,14 @@ const text = {
     addWorker: "+ Add Worker",
     workerPlaceholder: "Enter worker name",
     save: "Save",
+    update: "Update",
+    edit: "Edit",
+    remove: "Delete",
+    actions: "Actions",
+    cancelEdit: "Cancel Edit",
+    deleteConfirm: "Delete this process plan?",
     saveOk: "Process plan saved.",
+    updateOk: "Process plan updated.",
   },
 };
 
@@ -128,6 +142,7 @@ export default function ProcessPlanningPage() {
   const [productionMinutes, setProductionMinutes] = useState(0);
   const [workers, setWorkers] = useState<string[]>([""]);
   const [message, setMessage] = useState("");
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
 
   const saveDepartments = (next: Department[]) => {
     setDepartments(next);
@@ -160,12 +175,47 @@ export default function ProcessPlanningPage() {
     setWorkers((prev) => [...prev, ""]);
   };
 
+  const resetForm = () => {
+    setProcessName("");
+    setNote("");
+    setStandardConfig(true);
+    setReportFactor(100);
+    setDepartmentId("");
+    setProductionMinutes(0);
+    setWorkers([""]);
+    setEditingPlanId(null);
+  };
+
+  const editPlan = (plan: ProcessPlan) => {
+    setProcessName(plan.processName);
+    setNote(plan.note);
+    setStandardConfig(plan.standardConfig);
+    setReportFactor(plan.reportFactor);
+    setDepartmentId(plan.departmentId);
+    setProductionMinutes(plan.productionMinutes);
+    setWorkers(plan.defaultWorkers.length > 0 ? plan.defaultWorkers : [""]);
+    setEditingPlanId(plan.id);
+    setMessage("");
+  };
+
+  const removePlan = (id: string) => {
+    if (!window.confirm(copy.deleteConfirm)) {
+      return;
+    }
+    const next = plans.filter((item) => item.id !== id);
+    savePlans(next);
+    if (editingPlanId === id) {
+      resetForm();
+    }
+    setMessage("");
+  };
+
   const savePlan = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const departmentName = departments.find((d) => d.id === departmentId)?.name || "";
     const validWorkers = workers.map((w) => w.trim()).filter(Boolean);
     const item: ProcessPlan = {
-      id: `proc_${Date.now()}`,
+      id: editingPlanId ?? `proc_${Date.now()}`,
       processName: processName.trim(),
       note: note.trim(),
       standardConfig,
@@ -174,18 +224,16 @@ export default function ProcessPlanningPage() {
       departmentName,
       productionMinutes,
       defaultWorkers: validWorkers,
-      createdAt: new Date().toISOString(),
+      createdAt: editingPlanId
+        ? plans.find((plan) => plan.id === editingPlanId)?.createdAt ?? new Date().toISOString()
+        : new Date().toISOString(),
     };
-    const next = [...plans, item];
+    const next = editingPlanId
+      ? plans.map((plan) => (plan.id === editingPlanId ? item : plan))
+      : [...plans, item];
     savePlans(next);
-    setMessage(copy.saveOk);
-    setProcessName("");
-    setNote("");
-    setStandardConfig(true);
-    setReportFactor(100);
-    setDepartmentId("");
-    setProductionMinutes(0);
-    setWorkers([""]);
+    setMessage(editingPlanId ? copy.updateOk : copy.saveOk);
+    resetForm();
   };
 
   if (!session) {
@@ -221,6 +269,7 @@ export default function ProcessPlanningPage() {
                     <th className="px-2 py-2">{copy.reportFactor}</th>
                     <th className="px-2 py-2">{copy.productionMinutes}</th>
                     <th className="px-2 py-2">{copy.workers}</th>
+                    <th className="px-2 py-2">{copy.actions}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -231,6 +280,24 @@ export default function ProcessPlanningPage() {
                       <td className="px-2 py-2">{item.reportFactor}%</td>
                       <td className="px-2 py-2">{item.productionMinutes}</td>
                       <td className="px-2 py-2">{item.defaultWorkers.join(", ") || "-"}</td>
+                      <td className="px-2 py-2">
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => editPlan(item)}
+                            className="rounded-full border border-zinc-300 px-3 py-1 text-xs text-zinc-700"
+                          >
+                            {copy.edit}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removePlan(item.id)}
+                            className="rounded-full border border-rose-200 px-3 py-1 text-xs text-rose-700"
+                          >
+                            {copy.remove}
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -285,6 +352,7 @@ export default function ProcessPlanningPage() {
                 <select
                   value={departmentId}
                   onChange={(e) => setDepartmentId(e.target.value)}
+                  aria-label={copy.department}
                   className="min-w-64 rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none focus:border-zinc-500"
                 >
                   <option value="">{copy.department}</option>
@@ -372,12 +440,23 @@ export default function ProcessPlanningPage() {
             </label>
 
             <div className="md:col-span-2">
-              <button
-                type="submit"
-                className="rounded-full bg-zinc-900 px-6 py-2 text-sm font-medium text-white transition hover:bg-zinc-800"
-              >
-                {copy.save}
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="submit"
+                  className="rounded-full bg-zinc-900 px-6 py-2 text-sm font-medium text-white transition hover:bg-zinc-800"
+                >
+                  {editingPlanId ? copy.update : copy.save}
+                </button>
+                {editingPlanId ? (
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="rounded-full border border-zinc-300 px-4 py-2 text-sm text-zinc-700"
+                  >
+                    {copy.cancelEdit}
+                  </button>
+                ) : null}
+              </div>
               {message ? <p className="mt-2 text-sm text-emerald-700">{message}</p> : null}
             </div>
           </form>
