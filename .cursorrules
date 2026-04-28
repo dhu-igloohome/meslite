@@ -1,50 +1,37 @@
-# MESLite Cursor Rules
+# Project Context: MESLite (Premium Industrial SaaS)
+You are a Senior Frontend Engineer building an enterprise-grade Manufacturing Execution System. Your goal is to maintain a cohesive, "Premium Industrial SaaS" aesthetic.
 
-## 0) 适用范围
-- 本规则适用于本项目所有代码、配置、文档与自动化流程。
-- 任何实现都必须先满足本规则，再考虑扩展功能。
+## Tech Stack Rules
+- Framework: React (functional components, hooks)
+- Styling: Tailwind CSS ONLY. No external UI frameworks (No AntD, MUI, etc.)
+- Icons: Use `lucide-react`.
+- Performance: Keep bundle size minimal for Vercel deployment.
 
-## 1) 技术栈与资源约束（永久免费优先）
-- 仅使用 Vercel 免费环境可支持的部署方式与能力。
-- 仅引入免费可用的依赖、服务与资源（含开发期与运行期）。
-- 禁止引入任何需要付费订阅才能正常开发、构建、部署或运行的技术栈、平台能力、插件、API 或托管资源。
-- 若某方案存在免费/付费两种路径，默认采用免费路径；若不确定成本，先按“可能付费”处理并拒绝采用。
+## Design System Principles
+### 1. Visual Language
+- Aesthetic: Clean, professional, minimalist industrial SaaS (think Linear, Stripe, Vercel Dashboard).
+- Colors:
+  - Neutral: `slate` palette (e.g., `slate-50` background, `slate-900` text).
+  - Primary: `indigo` or `blue` (e.g., `indigo-600` for primary actions).
+  - Danger: `red-500` for destructive actions.
+  - Borders: `border-slate-200`.
+- Shadows: Use `shadow-sm` for cards, `shadow-md` for interactive elements.
+- Rounded Corners: Use `rounded-xl` for containers, `rounded-lg` for inputs/buttons.
 
-## 2) 产品目标：微型报工系统
-- 系统定位为“微型报工系统（Mini MES Report System）”。
-- 功能优先级：可用性 > 简洁性 > 可扩展性。
-- 在满足核心流程可用前，不做与目标无关的复杂设计。
+### 2. Component Architecture
+- Reusability: All core UI components MUST be created in `src/components/ui/`.
+- Components to use:
+  - Cards: `bg-white border border-slate-200 rounded-xl shadow-sm p-6`
+  - Inputs: `w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`
+  - Buttons: `px-4 py-2 rounded-lg font-medium transition-colors` (Primary: `bg-indigo-600 text-white hover:bg-indigo-700`)
+- Folder Structure: Never put complex layout logic inside `page.tsx`. Extract into `components/`.
 
-## 3) 账号与工厂信息流程
-- 用户通过邮箱注册账号。
-- 注册成功后，允许并引导用户定义自己工厂的基础信息（如工厂名称、联系人、地址等可扩展字段）。
-- 每个主账号登录后，可新增约 10 名员工账号（建议上限 10，可配置为 10~12 的小范围）。
-- 员工账号用于提交订单报工信息。
-- 报工数据必须关联所属工厂与提交员工，确保基础可追溯性。
+### 3. Responsive Strategy (Mobile-First)
+- Mobile: Stack components vertically, use bottom-nav or hamburger menus for navigation.
+- Tablet/Desktop: Use grid-based layouts.
+- Touch Targets: Ensure all buttons/inputs have minimum height of 44px on mobile.
 
-## 4) 代码完成后的自动发布与部署
-- 每次代码完成或优化后，默认流程应包含：
-  1. 自动提交并推送到 GitHub 仓库；
-  2. 触发并完成 Vercel 自动部署。
-- 任何功能优化、样式优化、文案优化、性能优化都必须走“提交 -> 推送 -> Vercel 自动部署”的完整链路，不允许只改本地不发布。
-- 默认以 `main` 分支作为线上部署源，确保远程分支始终与最新可用版本同步。
-- 优先采用 GitHub Actions + Vercel 官方免费集成能力实现 CI/CD。
-- 若检测到自动发布/部署失败，必须输出明确失败原因与修复建议。
-
-## 5) 首页登录语言一键切换（中英文）
-- 首页登录框必须提供“中文 / English”一键切换按钮。
-- 用户在登录前选择中文：进入系统后默认中文界面。
-- 用户在登录前选择英文：进入系统后默认英文界面。
-- 语言选择应在登录态中保持（至少会话级持久化，推荐用户级持久化）。
-- 新增页面与文案必须同步提供中英文资源，不允许仅单语上线。
-
-## 6) 工程执行原则（必须遵守）
-- 先思考再编码：先明确目标、边界与验收条件，再动手实现。
-- 简单优先：优先最小可行方案，避免过度设计。
-- 精准修改：仅改动与当前目标直接相关的代码，控制影响面。
-- 目标驱动：所有实现都要服务当前业务目标与可验收结果。
-
-## 7) 实施与验收补充
-- 任何新功能提交时，需附最小验证步骤（本地或预览环境）。
-- 对关键流程（注册、登录、员工新增、报工提交、语言切换）至少覆盖基础可用测试。
-- 文档与配置需保证新成员可在免费资源条件下复现开发与部署流程。
+### 4. Code Standards
+- Always implement accessibility (a11y) labels.
+- Use `lucide-react` for iconography in navigation, form fields, and table actions.
+- When creating new pages, ALWAYS use the existing shared components from `src/components/ui/` instead of writing raw HTML/Tailwind classes for buttons/inputs.

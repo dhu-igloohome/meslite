@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FileEdit, PlusCircle, Trash2 } from "lucide-react";
-import { PrimaryButton, DangerOutlineButton, SecondaryButton } from "../../_components/design-system/app-buttons";
-import { CardContainer } from "../../_components/design-system/card-container";
+import { PrimaryButton, DangerOutlineButton, SecondaryButton } from "@/components/ui/buttons";
+import { CardContainer } from "@/components/ui/card-container";
 import {
   DataTable,
   DataTableBody,
@@ -12,8 +12,8 @@ import {
   DataTableHead,
   DataTableHeaderCell,
   DataTableRow,
-} from "../../_components/design-system/data-table";
-import { SelectInput, TextAreaInput, TextInput } from "../../_components/design-system/form-elements";
+} from "@/components/ui/data-table";
+import { SelectInput, TextAreaInput, TextInput } from "@/components/ui/form-elements";
 import { useMesliteSession } from "../../_lib/session";
 
 type Department = {
