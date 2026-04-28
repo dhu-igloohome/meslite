@@ -21,9 +21,6 @@ const text = {
     statValues: ["128", "46", "214", "3"],
     overviewTitle: "系统概览",
     overviewText: "统一管理订单、任务、报工与主数据，支持移动扫码查询与系统级配置。",
-    account: "账号",
-    factory: "工厂",
-    logout: "退出登录",
   },
   en: {
     title: "MESLite",
@@ -42,9 +39,6 @@ const text = {
     overviewTitle: "Platform Overview",
     overviewText:
       "Centralize order, task, reporting and master data operations with mobile scan query and system-level settings.",
-    account: "Account",
-    factory: "Factory",
-    logout: "Log out",
   },
 };
 
@@ -61,7 +55,7 @@ const moduleRoutes = [
 
 export default function MeslitePage() {
   const router = useRouter();
-  const { session, locale, logout } = useMesliteSession();
+  const { session, locale } = useMesliteSession();
 
   const copy = useMemo(() => text[locale], [locale]);
 
@@ -82,9 +76,6 @@ export default function MeslitePage() {
             <div className="mt-1 flex items-start justify-between">
               <div>
                 <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">{copy.title}</h1>
-                <p className="mt-1 text-xs text-zinc-500">
-                  {copy.account}: {session.email}
-                </p>
               </div>
               <span className="rounded-full border border-zinc-200 px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-zinc-600">
                 Premium
@@ -127,20 +118,6 @@ export default function MeslitePage() {
           <section className="mt-4 rounded-3xl border border-black/5 bg-white p-4 text-sm text-zinc-700 shadow-[0_20px_50px_-30px_rgba(0,0,0,0.35)]">
             <h2 className="text-xl font-semibold tracking-tight text-zinc-900">{copy.overviewTitle}</h2>
             <p className="mt-2 text-zinc-600">{copy.overviewText}</p>
-            <p>
-              {copy.account}: <span className="font-medium text-zinc-900">{session.email}</span>
-            </p>
-            <p className="mt-1">
-              {copy.factory}:{" "}
-              <span className="font-medium text-zinc-900">{session.factoryName || "-"}</span>
-            </p>
-            <button
-              type="button"
-              onClick={logout}
-              className="mt-3 rounded-full bg-zinc-900 px-4 py-2 text-xs font-medium text-white transition hover:bg-zinc-800"
-            >
-              {copy.logout}
-            </button>
           </section>
         </section>
       </div>
