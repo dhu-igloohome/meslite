@@ -35,3 +35,10 @@ You are a Senior Frontend Engineer building an enterprise-grade Manufacturing Ex
 - Always implement accessibility (a11y) labels.
 - Use `lucide-react` for iconography in navigation, form fields, and table actions.
 - When creating new pages, ALWAYS use the existing shared components from `src/components/ui/` instead of writing raw HTML/Tailwind classes for buttons/inputs.
+
+## Vercel Cost Guardrails
+- Prefer static output for all pages whenever possible; avoid introducing runtime server logic unless explicitly required.
+- Do not add Next.js API routes, middleware, server actions, or dynamic rendering flags without a clear business need and cost justification.
+- Keep observability/event generation minimal in production code; avoid high-frequency client beacons/logging.
+- Assume MESLite is an internal app: default to `robots.txt` blocking index crawlers unless the user explicitly asks for public SEO.
+- Every meaningful change should run `npm run build` locally to ensure static compatibility and prevent accidental runtime cost regressions.
