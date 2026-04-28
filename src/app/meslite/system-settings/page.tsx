@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { BackButton } from "@/components/ui/back-button";
 import { useMesliteSession } from "../_lib/session";
 
 type ManagedUser = {
@@ -221,7 +221,6 @@ function toStoredUsers(users: ManagedUser[]) {
 }
 
 export default function SystemSettingsPage() {
-  const router = useRouter();
   const { session, locale } = useMesliteSession();
   const copy = useMemo(() => text[locale], [locale]);
 
@@ -606,13 +605,7 @@ export default function SystemSettingsPage() {
     <main className="min-h-screen bg-[#f7f7f5] p-4 sm:p-6">
       <div className="mx-auto max-w-6xl">
         <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-[0_16px_40px_-28px_rgba(0,0,0,.35)]">
-          <button
-            type="button"
-            onClick={() => router.push("/meslite")}
-            className="mb-3 rounded-full border border-zinc-300 px-3 py-1 text-xs text-zinc-600"
-          >
-            {copy.backLabel}
-          </button>
+          <BackButton label={copy.backLabel} fallbackHref="/meslite" className="mb-3" />
           <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">{copy.title}</h1>
           <p className="mt-1 text-sm text-zinc-500">{copy.subtitle}</p>
         </section>

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FilePenLine, FolderPlus, Trash2 } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
 import { DangerOutlineButton, PrimaryButton, SecondaryButton } from "@/components/ui/buttons";
 import { CardContainer } from "@/components/ui/card-container";
 import { TextInput } from "@/components/ui/form-elements";
@@ -170,9 +171,7 @@ export default function ProductCategoriesPage() {
     <main className="min-h-screen bg-slate-50 p-4 sm:p-6">
       <div className="mx-auto max-w-4xl space-y-4">
         <CardContainer className="p-5">
-          <SecondaryButton onClick={() => router.push("/meslite/master-data")} className="mb-3">
-            {copy.backLabel}
-          </SecondaryButton>
+          <BackButton label={copy.backLabel} fallbackHref="/meslite/master-data" className="mb-3" />
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{copy.title}</h1>
           <p className="mt-1 text-sm text-slate-500">{copy.subtitle}</p>
         </CardContainer>
