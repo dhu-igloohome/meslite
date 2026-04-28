@@ -74,13 +74,6 @@ const moduleRoutes = [
   "/meslite/system-settings",
 ];
 
-const metricSparklines = [
-  [38, 42, 40, 46, 44, 50, 52],
-  [22, 25, 23, 28, 30, 31, 33],
-  [56, 58, 60, 65, 67, 70, 74],
-  [18, 16, 17, 15, 14, 13, 12],
-];
-
 const moduleIcons = [ClipboardList, Wrench, Factory, Blocks, Cog, QrCode, Settings2];
 const metricIcons = [ClipboardList, Wrench, Factory, AlertTriangle];
 const quickActionRoutes = ["/meslite/work-orders", "/meslite/tasks", "/meslite/reporting"];
@@ -122,6 +115,39 @@ type OperationLog = {
   detail?: string;
   createdAt?: string;
 };
+
+function toDayKey(value?: string) {
+  if (!value) {
+    return "";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function lastNDayKeys(days: number) {
+  const keys: string[] = [];
+  const now = new Date();
+  for (let i = days - 1; i >= 0; i -= 1) {
+    const date = new Date(now);
+    date.setDate(now.getDate() - i);
+    keys.push(toDayKey(date.toISOString()));
+  }
+  return keys;
+}
+
+function formatTrend(current: number, previous: number) {
+  if (previous <= 0) {
+    return current > 0 ? "+100.0%" : "0.0%";
+  }
+  const percent = ((current - previous) / previous) * 100;
+  return `${percent >= 0 ? "+" : ""}${percent.toFixed(1)}%`;
+}
 
 function Sparkline({ values, negative = false }: { values: number[]; negative?: boolean }) {
   const width = 100;
@@ -202,7 +228,27 @@ export default function MeslitePage() {
   }));
   const quickActions = locale === "zh" ? ["新建工单", "创建任务", "新增报工"] : ["New Work Order", "Create Task", "New Report"];
 
-  const todayReportQty = reports.reduce((acc, item) => acc + Number(item.qty ?? item.reportQty ?? 0), 0);
+  const dayKeys = lastNDayKeys(7);
+  const todayKey = dayKeys[dayKeys.length - 1];
+
+  const reportQtyByDay = dayKeys.map((key) =>
+    reports
+      .filter((item) => toDayKey(item.createdAt) === key)
+      .reduce((acc, item) => acc + Number(item.qty ?? item.reportQty ?? 0), 0),
+  );
+  const workOrderByDay = dayKeys.map(
+    (key) => workOrders.filter((item) => toDayKey(item.createdAt) === key).length,
+  );
+  const taskByDay = dayKeys.map((key) => tasks.filter((item) => toDayKey(item.createdAt) === key).length);
+  const alertsByDay = dayKeys.map((key) => {
+    const dueAlerts = workOrders.filter((item) => item.dueDate && new Date(item.dueDate) < new Date() && toDayKey(item.createdAt) === key).length;
+    const reportAlerts = reports.filter((item) => Boolean(item.exception) && toDayKey(item.createdAt) === key).length;
+    return dueAlerts + reportAlerts;
+  });
+
+  const todayReportQty = reports
+    .filter((item) => toDayKey(item.createdAt) === todayKey)
+    .reduce((acc, item) => acc + Number(item.qty ?? item.reportQty ?? 0), 0);
   const activeTasks = tasks.filter((item) => (item.status || "").toLowerCase() !== "done").length;
   const pendingOrders = workOrders.length;
   const totalAlerts =
@@ -210,6 +256,13 @@ export default function MeslitePage() {
     reports.filter((item) => Boolean(item.exception)).length;
 
   const statValues = [String(pendingOrders), String(activeTasks), String(todayReportQty), String(totalAlerts)];
+  const metricSparklines = [workOrderByDay, taskByDay, reportQtyByDay, alertsByDay];
+  const statTrends = [
+    formatTrend(workOrderByDay[6] ?? 0, workOrderByDay[5] ?? 0),
+    formatTrend(taskByDay[6] ?? 0, taskByDay[5] ?? 0),
+    formatTrend(reportQtyByDay[6] ?? 0, reportQtyByDay[5] ?? 0),
+    formatTrend(alertsByDay[6] ?? 0, alertsByDay[5] ?? 0),
+  ];
 
   const pendingList =
     workOrders.length > 0
@@ -337,7 +390,7 @@ export default function MeslitePage() {
           <section>
           <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {copy.statLabels.map((label, index) => {
-              const trend = copy.statTrends[index];
+              const trend = statTrends[index] || copy.statTrends[index];
               const isNegative = trend.startsWith("-");
               const StatIcon = metricIcons[index];
               return (
