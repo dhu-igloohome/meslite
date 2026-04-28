@@ -42,11 +42,19 @@ type Worker = {
   departmentId: string;
 };
 
+type ProcessPlan = {
+  id: string;
+  processName: string;
+  departmentId: string;
+  defaultWorkers: string[];
+};
+
 const USERS_KEY = "meslite_users";
 const PENDING_USERS_KEY = "meslite_pending_users";
 const LOGS_KEY = "meslite_operation_logs";
 const DEPARTMENTS_KEY = "meslite_departments";
 const WORKERS_KEY = "meslite_workers";
+const PROCESS_PLANS_KEY = "meslite_process_plans";
 
 const PRESERVE_KEYS = [
   "meslite_team_settings",
@@ -92,6 +100,8 @@ const text = {
     updateWorker: "更新人员",
     cancelEditWorker: "取消编辑",
     editWorker: "编辑",
+    departmentInUse: "该部门已被工艺编制引用，暂不可删除。",
+    workerInUse: "该人员已被工艺编制引用，暂不可删除。",
     invite: "转发邀请好友",
     scanJoin: "扫码加入",
     manualAdd: "手动添加",
@@ -128,6 +138,8 @@ const text = {
     updateWorker: "Update Worker",
     cancelEditWorker: "Cancel Edit",
     editWorker: "Edit",
+    departmentInUse: "This department is referenced by process plans and cannot be deleted.",
+    workerInUse: "This worker is referenced by process plans and cannot be deleted.",
     invite: "Forward Invite",
     scanJoin: "Join by Scan",
     manualAdd: "Manual Add",
@@ -280,6 +292,19 @@ export default function SystemSettingsPage() {
   const [editingWorkerId, setEditingWorkerId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
+  const readProcessPlans = (): ProcessPlan[] => {
+    const raw = localStorage.getItem(PROCESS_PLANS_KEY);
+    if (!raw) {
+      return [];
+    }
+    try {
+      const parsed = JSON.parse(raw) as ProcessPlan[];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+
   const appendLog = (action: string, detail: string) => {
     const entry: OperationLog = {
       id: nextId(
@@ -331,6 +356,12 @@ export default function SystemSettingsPage() {
   };
 
   const removeDepartment = (id: string) => {
+    const plans = readProcessPlans();
+    if (plans.some((item) => item.departmentId === id)) {
+      setMessage(copy.departmentInUse);
+      return;
+    }
+
     const target = departments.find((item) => item.id === id);
     const next = departments.filter((item) => item.id !== id);
     saveDepartments(next);
@@ -341,6 +372,7 @@ export default function SystemSettingsPage() {
     if (filteredWorkers.length !== workers.length) {
       saveWorkers(filteredWorkers);
     }
+    setMessage("");
   };
 
   const upsertWorker = () => {
@@ -376,16 +408,24 @@ export default function SystemSettingsPage() {
 
   const removeWorker = (id: string) => {
     const target = workers.find((item) => item.id === id);
+    if (!target) {
+      return;
+    }
+    const plans = readProcessPlans();
+    if (plans.some((item) => item.defaultWorkers.includes(target.name))) {
+      setMessage(copy.workerInUse);
+      return;
+    }
+
     const next = workers.filter((item) => item.id !== id);
     saveWorkers(next);
-    if (target) {
-      appendLog("remove_worker", target.name);
-    }
+    appendLog("remove_worker", target.name);
     if (editingWorkerId === id) {
       setEditingWorkerId(null);
       setWorkerName("");
       setWorkerDepartmentId("");
     }
+    setMessage("");
   };
 
   const addPendingUser = (method: PendingUser["method"], manualName?: string) => {
