@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   AlertTriangle,
@@ -10,11 +10,13 @@ import {
   ClipboardList,
   Cog,
   Factory,
+  Menu,
   QrCode,
   Settings2,
   TrendingDown,
   TrendingUp,
   Wrench,
+  X,
 } from "lucide-react";
 import { useMesliteSession } from "./_lib/session";
 
@@ -114,11 +116,18 @@ export default function MeslitePage() {
   const router = useRouter();
   const pathname = usePathname();
   const { session, locale } = useMesliteSession();
+  const [isNavOpen, setIsNavOpen] = useState(false);
 
   const copy = useMemo(() => text[locale], [locale]);
+  const navItems = copy.modules.map((moduleName, index) => ({
+    label: moduleName,
+    route: moduleRoutes[index],
+    Icon: moduleIcons[index],
+  }));
 
-  const goModule = (index: number) => {
-    router.push(moduleRoutes[index]);
+  const goModule = (route: string) => {
+    router.push(route);
+    setIsNavOpen(false);
   };
 
   if (!session) {
@@ -126,36 +135,48 @@ export default function MeslitePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f4f6f8] p-4 sm:p-6">
-      <div className="mx-auto grid max-w-7xl gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <aside className="lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:overflow-hidden">
-          <section className="rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-[0_24px_60px_-38px_rgba(15,23,42,.45)]">
-            <p className="text-[11px] tracking-[0.18em] text-zinc-500">{copy.greeting}</p>
-            <div className="mt-2 flex items-start justify-between">
-              <div>
-                <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">{copy.title}</h1>
-              </div>
-              <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-violet-700">
-                Premium
-              </span>
-            </div>
-          </section>
+    <main className="min-h-screen bg-[#f4f6f8] p-4 md:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl">
+        <header className="mb-4 flex items-center justify-between rounded-2xl border border-zinc-200/80 bg-white px-4 py-3 shadow-[0_18px_40px_-34px_rgba(15,23,42,.55)] lg:hidden">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.12em] text-zinc-500">{copy.greeting}</p>
+            <h1 className="text-lg font-semibold text-zinc-900">{copy.title}</h1>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsNavOpen(true)}
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-700"
+            aria-label="Open navigation"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        </header>
 
-          <section className="mt-4 rounded-3xl border border-zinc-200/80 bg-white p-4 shadow-[0_24px_60px_-40px_rgba(15,23,42,.45)]">
-            <p className="mb-3 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
-              {copy.navSection}
-            </p>
-            <div className="grid grid-cols-1 gap-2">
-              {copy.modules.map((moduleName, index) => (
-                (() => {
-                  const Icon = moduleIcons[index];
-                  const isActive = pathname?.startsWith(moduleRoutes[index]);
+        <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+          <aside className="hidden lg:sticky lg:top-4 lg:block lg:h-[calc(100vh-2rem)] lg:overflow-hidden">
+            <section className="rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-[0_24px_60px_-38px_rgba(15,23,42,.45)]">
+              <p className="text-[11px] tracking-[0.18em] text-zinc-500">{copy.greeting}</p>
+              <div className="mt-2 flex items-start justify-between">
+                <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">{copy.title}</h1>
+                <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-violet-700">
+                  Premium
+                </span>
+              </div>
+            </section>
+
+            <section className="mt-4 rounded-3xl border border-zinc-200/80 bg-white p-4 shadow-[0_24px_60px_-40px_rgba(15,23,42,.45)]">
+              <p className="mb-3 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
+                {copy.navSection}
+              </p>
+              <div className="grid grid-cols-1 gap-2">
+                {navItems.map(({ label, route, Icon }) => {
+                  const isActive = pathname?.startsWith(route);
                   return (
                     <button
-                      key={moduleName}
+                      key={label}
                       type="button"
-                      onClick={() => goModule(index)}
-                      className={`group flex items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
+                      onClick={() => goModule(route)}
+                      className={`group flex min-h-11 items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
                         isActive
                           ? "border-violet-200 bg-violet-50/80 shadow-[0_10px_30px_-24px_rgba(109,40,217,.8)]"
                           : "border-zinc-100 bg-zinc-50/80 hover:-translate-y-0.5 hover:border-zinc-200 hover:bg-white hover:shadow-md"
@@ -170,7 +191,7 @@ export default function MeslitePage() {
                       >
                         <Icon className="h-4 w-4" />
                       </span>
-                      <span className="min-w-0 flex-1 text-sm font-medium text-zinc-800">{moduleName}</span>
+                      <span className="min-w-0 flex-1 text-sm font-medium text-zinc-800">{label}</span>
                       <ChevronRight
                         className={`h-4 w-4 transition ${
                           isActive ? "text-violet-600" : "text-zinc-400 group-hover:translate-x-0.5"
@@ -178,13 +199,12 @@ export default function MeslitePage() {
                       />
                     </button>
                   );
-                })()
-              ))}
-            </div>
-          </section>
-        </aside>
+                })}
+              </div>
+            </section>
+          </aside>
 
-        <section>
+          <section>
           <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {copy.statLabels.map((label, index) => {
               const trend = copy.statTrends[index];
@@ -193,12 +213,12 @@ export default function MeslitePage() {
               return (
                 <article
                   key={label}
-                  className="group rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-[0_24px_50px_-40px_rgba(15,23,42,.55)] transition hover:-translate-y-0.5 hover:shadow-[0_30px_60px_-40px_rgba(15,23,42,.65)]"
+                  className="group rounded-2xl border border-zinc-200/80 bg-white p-4 sm:p-5 shadow-[0_24px_50px_-40px_rgba(15,23,42,.55)] transition hover:-translate-y-0.5 hover:shadow-[0_30px_60px_-40px_rgba(15,23,42,.65)]"
                 >
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500">{label}</p>
-                      <p className="text-3xl font-semibold leading-none tracking-tight text-zinc-900">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500 sm:text-xs">{label}</p>
+                      <p className="text-2xl font-semibold leading-none tracking-tight text-zinc-900 sm:text-3xl">
                         {copy.statValues[index]}
                       </p>
                     </div>
@@ -227,9 +247,9 @@ export default function MeslitePage() {
             })}
           </section>
 
-          <section className="mt-4 rounded-3xl border border-zinc-200/80 bg-white p-5 text-sm text-zinc-700 shadow-[0_24px_60px_-40px_rgba(15,23,42,.55)]">
+          <section className="mt-4 rounded-3xl border border-zinc-200/80 bg-white p-4 text-sm text-zinc-700 shadow-[0_24px_60px_-40px_rgba(15,23,42,.55)] sm:p-5">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-xl font-semibold tracking-tight text-zinc-900">{copy.overviewTitle}</h2>
+              <h2 className="text-lg font-semibold tracking-tight text-zinc-900 sm:text-xl">{copy.overviewTitle}</h2>
               <span className="inline-flex items-center gap-1 text-xs font-medium text-violet-700">
                 Live
                 <ArrowUpRight className="h-3.5 w-3.5" />
@@ -238,7 +258,65 @@ export default function MeslitePage() {
             <p className="mt-2 max-w-3xl text-zinc-600">{copy.overviewText}</p>
           </section>
         </section>
+        </div>
       </div>
+
+      {isNavOpen ? (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
+          <button
+            type="button"
+            onClick={() => setIsNavOpen(false)}
+            className="absolute inset-0 bg-zinc-900/40"
+            aria-label="Close navigation"
+          />
+          <aside className="absolute left-0 top-0 h-full w-[85%] max-w-sm overflow-y-auto border-r border-zinc-200 bg-white p-4 shadow-xl">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.12em] text-zinc-500">{copy.greeting}</p>
+                <h2 className="text-xl font-semibold text-zinc-900">{copy.title}</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsNavOpen(false)}
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-zinc-200 text-zinc-700"
+                aria-label="Close navigation"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="mb-3 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
+              {copy.navSection}
+            </p>
+            <div className="grid grid-cols-1 gap-2">
+              {navItems.map(({ label, route, Icon }) => {
+                const isActive = pathname?.startsWith(route);
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => goModule(route)}
+                    className={`group flex min-h-11 items-center gap-3 rounded-2xl border px-3 py-3 text-left ${
+                      isActive
+                        ? "border-violet-200 bg-violet-50/80"
+                        : "border-zinc-100 bg-zinc-50/80 active:bg-zinc-100"
+                    }`}
+                  >
+                    <span
+                      className={`inline-flex h-8 w-8 items-center justify-center rounded-xl ${
+                        isActive ? "bg-violet-600 text-white" : "border border-zinc-200 bg-white text-zinc-600"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="min-w-0 flex-1 text-sm font-medium text-zinc-800">{label}</span>
+                    <ChevronRight className={`h-4 w-4 ${isActive ? "text-violet-600" : "text-zinc-400"}`} />
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+        </div>
+      ) : null}
     </main>
   );
 }
