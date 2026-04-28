@@ -2,6 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { FileEdit, PlusCircle, Trash2 } from "lucide-react";
+import { PrimaryButton, DangerOutlineButton, SecondaryButton } from "../../_components/design-system/app-buttons";
+import { CardContainer } from "../../_components/design-system/card-container";
+import {
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHead,
+  DataTableHeaderCell,
+  DataTableRow,
+} from "../../_components/design-system/data-table";
+import { SelectInput, TextAreaInput, TextInput } from "../../_components/design-system/form-elements";
 import { useMesliteSession } from "../../_lib/session";
 
 type Department = {
@@ -60,6 +72,7 @@ const text = {
     actions: "操作",
     cancelEdit: "取消编辑",
     deleteConfirm: "确认删除该工艺编制吗？",
+    listHint: "左侧查看与管理工艺，右侧快速新增或更新。",
     saveOk: "工艺编制保存成功。",
     updateOk: "工艺编制更新成功。",
   },
@@ -92,6 +105,7 @@ const text = {
     actions: "Actions",
     cancelEdit: "Cancel Edit",
     deleteConfirm: "Delete this process plan?",
+    listHint: "Manage plans on the left and create/update quickly on the right.",
     saveOk: "Process plan saved.",
     updateOk: "Process plan updated.",
   },
@@ -276,237 +290,208 @@ export default function ProcessPlanningPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f7f5] p-4 sm:p-6">
-      <div className="mx-auto max-w-6xl">
-        <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-[0_16px_40px_-28px_rgba(0,0,0,.35)]">
-          <button
-            type="button"
-            onClick={() => router.push("/meslite/master-data")}
-            className="mb-3 rounded-full border border-zinc-300 px-3 py-1 text-xs text-zinc-600"
-          >
+    <main className="min-h-screen bg-slate-50 p-4 sm:p-6">
+      <div className="mx-auto max-w-7xl space-y-4">
+        <CardContainer className="p-5">
+          <SecondaryButton onClick={() => router.push("/meslite/master-data")} className="mb-3">
             {copy.backLabel}
-          </button>
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">{copy.title}</h1>
-          <p className="mt-1 text-sm text-zinc-500">{copy.subtitle}</p>
-        </section>
+          </SecondaryButton>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{copy.title}</h1>
+          <p className="mt-1 text-sm text-slate-500">{copy.subtitle}</p>
+        </CardContainer>
 
-        <section className="mt-4 rounded-3xl border border-black/5 bg-white p-5 shadow-[0_16px_40px_-28px_rgba(0,0,0,.35)]">
-          <h2 className="text-lg font-semibold text-zinc-900">{copy.existingList}</h2>
-          {plans.length === 0 ? (
-            <p className="mt-2 text-sm text-zinc-500">{copy.empty}</p>
-          ) : (
-            <div className="mt-3 overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="text-zinc-500">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
+          <CardContainer className="p-4 xl:col-span-3">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold text-slate-900">{copy.existingList}</h2>
+              <p className="text-xs text-slate-500">{copy.listHint}</p>
+            </div>
+            {plans.length === 0 ? (
+              <p className="text-sm text-slate-500">{copy.empty}</p>
+            ) : (
+              <DataTable>
+                <DataTableHead>
                   <tr>
-                    <th className="px-2 py-2">{copy.processName}</th>
-                    <th className="px-2 py-2">{copy.department}</th>
-                    <th className="px-2 py-2">{copy.reportFactor}</th>
-                    <th className="px-2 py-2">{copy.productionMinutes}</th>
-                    <th className="px-2 py-2">{copy.workers}</th>
-                    <th className="px-2 py-2">{copy.actions}</th>
+                    <DataTableHeaderCell>{copy.processName}</DataTableHeaderCell>
+                    <DataTableHeaderCell>{copy.department}</DataTableHeaderCell>
+                    <DataTableHeaderCell>{copy.reportFactor}</DataTableHeaderCell>
+                    <DataTableHeaderCell>{copy.productionMinutes}</DataTableHeaderCell>
+                    <DataTableHeaderCell>{copy.workers}</DataTableHeaderCell>
+                    <DataTableHeaderCell>{copy.actions}</DataTableHeaderCell>
                   </tr>
-                </thead>
-                <tbody>
-                  {plans.map((item) => (
-                    <tr key={item.id} className="border-t border-zinc-100 text-zinc-700">
-                      <td className="px-2 py-2">{item.processName}</td>
-                      <td className="px-2 py-2">{item.departmentName || "-"}</td>
-                      <td className="px-2 py-2">{item.reportFactor}%</td>
-                      <td className="px-2 py-2">{item.productionMinutes}</td>
-                      <td className="px-2 py-2">{item.defaultWorkers.join(", ") || "-"}</td>
-                      <td className="px-2 py-2">
+                </DataTableHead>
+                <DataTableBody>
+                  {plans.map((item, index) => (
+                    <DataTableRow key={item.id} striped={index % 2 === 1}>
+                      <DataTableCell>{item.processName}</DataTableCell>
+                      <DataTableCell>{item.departmentName || "-"}</DataTableCell>
+                      <DataTableCell>{item.reportFactor}%</DataTableCell>
+                      <DataTableCell>{item.productionMinutes}</DataTableCell>
+                      <DataTableCell>{item.defaultWorkers.join(", ") || "-"}</DataTableCell>
+                      <DataTableCell>
                         <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => editPlan(item)}
-                            className="rounded-full border border-zinc-300 px-3 py-1 text-xs text-zinc-700"
-                          >
+                          <SecondaryButton onClick={() => editPlan(item)} className="min-h-9 px-3 py-1.5 text-xs">
+                            <FileEdit className="h-4 w-4" />
                             {copy.edit}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => removePlan(item.id)}
-                            className="rounded-full border border-rose-200 px-3 py-1 text-xs text-rose-700"
-                          >
+                          </SecondaryButton>
+                          <DangerOutlineButton onClick={() => removePlan(item.id)} className="min-h-9 px-3 py-1.5 text-xs">
+                            <Trash2 className="h-4 w-4" />
                             {copy.remove}
-                          </button>
+                          </DangerOutlineButton>
                         </div>
-                      </td>
-                    </tr>
+                      </DataTableCell>
+                    </DataTableRow>
                   ))}
-                </tbody>
-              </table>
+                </DataTableBody>
+              </DataTable>
+            )}
+          </CardContainer>
+
+          <CardContainer className="p-4 xl:col-span-2">
+            <div className="mb-4 flex items-center gap-2">
+              <PlusCircle className="h-5 w-5 text-indigo-600" />
+              <h2 className="text-lg font-semibold text-slate-900">{copy.createTitle}</h2>
             </div>
-          )}
-        </section>
 
-        <section className="mt-4 rounded-3xl border border-black/5 bg-white p-5 shadow-[0_16px_40px_-28px_rgba(0,0,0,.35)]">
-          <h2 className="text-xl font-semibold text-zinc-900">{copy.createTitle}</h2>
-          <form className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2" onSubmit={savePlan}>
-            <label className="text-sm text-zinc-700">
-              {copy.processName}
-              <input
-                type="text"
-                required
-                value={processName}
-                onChange={(e) => setProcessName(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
-              />
-            </label>
+            <form className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-1" onSubmit={savePlan}>
+              <label className="text-sm text-slate-700">
+                {copy.processName}
+                <TextInput required value={processName} onChange={(e) => setProcessName(e.target.value)} />
+              </label>
 
-            <label className="text-sm text-zinc-700">
-              {copy.reportFactor}
-              <input
-                type="number"
-                min={1}
-                value={reportFactor}
-                onChange={(e) => setReportFactor(Number(e.target.value || 100))}
-                className="mt-1 w-full rounded-xl border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
-              />
-            </label>
-            <p className="text-xs text-zinc-500 md:col-span-2">{copy.reportHint}</p>
-
-            <div className="text-sm text-zinc-700 md:col-span-2">
-              <div className="flex items-center gap-2">
-                <input
-                  id="standardConfig"
-                  type="checkbox"
-                  checked={standardConfig}
-                  onChange={(e) => setStandardConfig(e.target.checked)}
-                  className="h-4 w-4 rounded border-zinc-300"
+              <label className="text-sm text-slate-700">
+                {copy.reportFactor}
+                <TextInput
+                  type="number"
+                  min={1}
+                  value={reportFactor}
+                  onChange={(e) => setReportFactor(Number(e.target.value || 100))}
                 />
-                <label htmlFor="standardConfig">{copy.standardConfig}</label>
-              </div>
-              <p className="mt-1 text-xs text-zinc-500">{copy.standardHint}</p>
-            </div>
+              </label>
+              <p className="text-xs text-slate-500 md:col-span-2 xl:col-span-1">{copy.reportHint}</p>
 
-            <div className="text-sm text-zinc-700 md:col-span-2">
-              <p>{copy.department}</p>
-              <div className="mt-1 flex flex-wrap gap-2">
-                <select
-                  value={departmentId}
-                  onChange={(e) => {
-                    const nextDepartmentId = e.target.value;
-                    setDepartmentId(nextDepartmentId);
-                    setWorkers((prev) =>
-                      prev.filter((name) =>
-                        workerOptions.some(
-                          (option) =>
-                            option.name === name && (!nextDepartmentId || option.departmentId === nextDepartmentId),
-                        ),
-                      ),
-                    );
-                  }}
-                  aria-label={copy.department}
-                  className="min-w-64 rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none focus:border-zinc-500"
-                >
-                  <option value="">{copy.department}</option>
-                  {departments.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => router.push("/meslite/system-settings")}
-                  className="rounded-full border border-zinc-300 px-4 py-2 text-xs text-zinc-700"
-                >
-                  {copy.addDepartmentInSettings}
-                </button>
-              </div>
-            </div>
-
-            <label className="text-sm text-zinc-700">
-              {copy.productionMinutes}
-              <input
-                type="number"
-                min={0}
-                required
-                value={productionMinutes}
-                onChange={(e) => setProductionMinutes(Number(e.target.value || 0))}
-                className="mt-1 w-full rounded-xl border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
-              />
-            </label>
-
-            <div className="text-sm text-zinc-700 md:col-span-2">
-              <p>{copy.workers}</p>
-              <p className="mt-1 text-xs text-zinc-500">{copy.selectWorkersHint}</p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {workerOptions
-                  .filter((item) => !departmentId || item.departmentId === departmentId)
-                  .map((item) => {
-                    const selected = workers.includes(item.name);
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => toggleWorker(item.name)}
-                        className={`rounded-full border px-3 py-1.5 text-xs transition ${
-                          selected
-                            ? "border-zinc-900 bg-zinc-900 text-white"
-                            : "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400"
-                        }`}
-                      >
-                        {item.name}
-                      </button>
-                    );
-                  })}
-              </div>
-              {workerOptions.filter((item) => !departmentId || item.departmentId === departmentId).length === 0 ? (
-                <p className="mt-2 text-xs text-amber-700">{copy.noWorkers}</p>
-              ) : null}
-
-              {workers.length > 0 ? (
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <span className="text-xs text-zinc-500">{copy.selectedWorkers}:</span>
-                  {workers.map((worker) => (
-                    <button
-                      key={worker}
-                      type="button"
-                      onClick={() => toggleWorker(worker)}
-                      className="rounded-full border border-zinc-300 bg-zinc-100 px-3 py-1 text-xs text-zinc-700"
-                    >
-                      {worker} ×
-                    </button>
-                  ))}
+              <div className="text-sm text-slate-700 md:col-span-2 xl:col-span-1">
+                <div className="flex items-center gap-2">
+                  <input
+                    id="standardConfig"
+                    type="checkbox"
+                    checked={standardConfig}
+                    onChange={(e) => setStandardConfig(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <label htmlFor="standardConfig">{copy.standardConfig}</label>
                 </div>
-              ) : null}
-            </div>
+                <p className="mt-1 text-xs text-slate-500">{copy.standardHint}</p>
+              </div>
 
-            <label className="text-sm text-zinc-700 md:col-span-2">
-              {copy.note}
-              <textarea
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                rows={3}
-                className="mt-1 w-full rounded-xl border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
-              />
-            </label>
-
-            <div className="md:col-span-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="submit"
-                  className="rounded-full bg-zinc-900 px-6 py-2 text-sm font-medium text-white transition hover:bg-zinc-800"
-                >
-                  {editingPlanId ? copy.update : copy.save}
-                </button>
-                {editingPlanId ? (
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="rounded-full border border-zinc-300 px-4 py-2 text-sm text-zinc-700"
+              <div className="text-sm text-slate-700 md:col-span-2 xl:col-span-1">
+                <p>{copy.department}</p>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  <SelectInput
+                    value={departmentId}
+                    onChange={(e) => {
+                      const nextDepartmentId = e.target.value;
+                      setDepartmentId(nextDepartmentId);
+                      setWorkers((prev) =>
+                        prev.filter((name) =>
+                          workerOptions.some(
+                            (option) =>
+                              option.name === name && (!nextDepartmentId || option.departmentId === nextDepartmentId),
+                          ),
+                        ),
+                      );
+                    }}
+                    aria-label={copy.department}
+                    className="min-w-56"
                   >
-                    {copy.cancelEdit}
-                  </button>
+                    <option value="">{copy.department}</option>
+                    {departments.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </SelectInput>
+                  <SecondaryButton type="button" onClick={() => router.push("/meslite/system-settings")} className="min-h-10 text-xs">
+                    {copy.addDepartmentInSettings}
+                  </SecondaryButton>
+                </div>
+              </div>
+
+              <label className="text-sm text-slate-700">
+                {copy.productionMinutes}
+                <TextInput
+                  type="number"
+                  min={0}
+                  required
+                  value={productionMinutes}
+                  onChange={(e) => setProductionMinutes(Number(e.target.value || 0))}
+                />
+              </label>
+
+              <div className="text-sm text-slate-700 md:col-span-2 xl:col-span-1">
+                <p>{copy.workers}</p>
+                <p className="mt-1 text-xs text-slate-500">{copy.selectWorkersHint}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {workerOptions
+                    .filter((item) => !departmentId || item.departmentId === departmentId)
+                    .map((item) => {
+                      const selected = workers.includes(item.name);
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => toggleWorker(item.name)}
+                          className={`inline-flex min-h-10 items-center rounded-lg border px-3 py-1.5 text-xs transition ${
+                            selected
+                              ? "border-indigo-600 bg-indigo-600 text-white"
+                              : "border-slate-300 bg-white text-slate-700 hover:border-slate-400"
+                          }`}
+                        >
+                          {item.name}
+                        </button>
+                      );
+                    })}
+                </div>
+                {workerOptions.filter((item) => !departmentId || item.departmentId === departmentId).length === 0 ? (
+                  <p className="mt-2 text-xs text-amber-700">{copy.noWorkers}</p>
+                ) : null}
+
+                {workers.length > 0 ? (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className="text-xs text-slate-500">{copy.selectedWorkers}:</span>
+                    {workers.map((worker) => (
+                      <button
+                        key={worker}
+                        type="button"
+                        onClick={() => toggleWorker(worker)}
+                        className="inline-flex min-h-9 items-center rounded-lg border border-slate-300 bg-slate-100 px-3 py-1 text-xs text-slate-700"
+                      >
+                        {worker} ×
+                      </button>
+                    ))}
+                  </div>
                 ) : null}
               </div>
-              {message ? <p className="mt-2 text-sm text-emerald-700">{message}</p> : null}
-            </div>
-          </form>
-        </section>
+
+              <label className="text-sm text-slate-700 md:col-span-2 xl:col-span-1">
+                {copy.note}
+                <TextAreaInput value={note} onChange={(e) => setNote(e.target.value)} rows={3} />
+              </label>
+
+              <div className="md:col-span-2 xl:col-span-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <PrimaryButton type="submit">{editingPlanId ? copy.update : copy.save}</PrimaryButton>
+                  {editingPlanId ? (
+                    <SecondaryButton type="button" onClick={resetForm}>
+                      {copy.cancelEdit}
+                    </SecondaryButton>
+                  ) : null}
+                </div>
+                {message ? <p className="mt-2 text-sm text-emerald-700">{message}</p> : null}
+              </div>
+            </form>
+          </CardContainer>
+        </div>
       </div>
     </main>
   );
