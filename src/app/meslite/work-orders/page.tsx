@@ -15,6 +15,13 @@ type ProductRecord = {
   productName: string;
   productSpec: string;
   categoryName: string;
+  processRouteSteps?: {
+    stepNo: number;
+    processPlanId: string;
+    processPlanName: string;
+    departmentName: string;
+    reportFactor: number;
+  }[];
 };
 
 type ProcessPlan = {
@@ -45,6 +52,14 @@ type WorkOrderRecord = {
   dueDate: string;
   departmentName: string;
   workers: string[];
+  processRouteSteps?: {
+    stepNo: number;
+    processPlanId: string;
+    processPlanName: string;
+    reportFactor: number;
+    processPlannedQty: number;
+    departmentName: string;
+  }[];
   note: string;
   createdAt: string;
 };
@@ -71,8 +86,11 @@ const text = {
     plannedQty: "计划数量",
     dueDate: "计划交期",
     processPlan: "工艺编制",
+    processRoute: "工艺路线",
+    routeStep: "步骤",
     processFactor: "报工系数",
     processPlannedQty: "工序计划数量（自动）",
+    routePlannedQty: "路线工序计划数量",
     department: "生产部门",
     workers: "默认生产人员",
     note: "备注",
@@ -81,6 +99,7 @@ const text = {
     noCategory: "请先在基础数据里创建“订单/工单分类”。",
     noProduct: "请先在基础数据里创建产品。",
     noProcess: "请先在基础数据里创建工艺编制。",
+    noRoute: "该产品未配置工艺路线，请先在产品中心配置。",
     workOrderNo: "工单号",
     productName: "产品名称",
     processName: "工序名称",
@@ -102,8 +121,11 @@ const text = {
     plannedQty: "Planned Quantity",
     dueDate: "Planned Due Date",
     processPlan: "Process Plan",
+    processRoute: "Process Route",
+    routeStep: "Step",
     processFactor: "Reporting Factor",
     processPlannedQty: "Process Planned Qty (auto)",
+    routePlannedQty: "Route Process Planned Qty",
     department: "Production Department",
     workers: "Default Workers",
     note: "Note",
@@ -112,6 +134,7 @@ const text = {
     noCategory: "Create order/work-order categories in master data first.",
     noProduct: "Create products in master data first.",
     noProcess: "Create process plans in master data first.",
+    noRoute: "This product has no process route. Configure it in Product Center first.",
     workOrderNo: "Work Order No.",
     productName: "Product Name",
     processName: "Process Name",
@@ -209,15 +232,21 @@ export default function WorkOrdersPage() {
   const [productId, setProductId] = useState("");
   const [plannedQty, setPlannedQty] = useState(0);
   const [dueDate, setDueDate] = useState("");
-  const [processPlanId, setProcessPlanId] = useState("");
   const [note, setNote] = useState("");
   const [message, setMessage] = useState("");
 
   const selectedProduct = products.find((item) => item.id === productId);
-  const selectedProcess = processPlans.find((item) => item.id === processPlanId);
+  const selectedRoute =
+    selectedProduct?.processRouteSteps?.map((step) => ({
+      ...step,
+      processPlannedQty: Math.round(plannedQty * ((step.reportFactor ?? 100) / 100)),
+    })) || [];
+  const fallbackProcess = processPlans[0];
+  const selectedProcess = selectedRoute.length > 0 ? null : fallbackProcess;
 
   const processFactor = selectedProcess?.reportFactor ?? 100;
-  const processPlannedQty = Math.round(plannedQty * (processFactor / 100));
+  const processPlannedQty =
+    selectedRoute.length > 0 ? selectedRoute.reduce((acc, item) => acc + item.processPlannedQty, 0) : Math.round(plannedQty * (processFactor / 100));
 
   const saveRecords = (next: WorkOrderRecord[]) => {
     setRecords(next);
@@ -226,7 +255,12 @@ export default function WorkOrdersPage() {
 
   const createRecord = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!selectedProduct?.processRouteSteps || selectedProduct.processRouteSteps.length === 0) {
+      setMessage(copy.noRoute);
+      return;
+    }
     const categoryName = categories.find((item) => item.id === categoryId)?.name || "";
+    const mainRouteStep = selectedRoute[0];
     const item: WorkOrderRecord = {
       id: nextRecordId(records),
       workOrderNo: nextWorkOrderNo(records),
@@ -238,14 +272,28 @@ export default function WorkOrdersPage() {
       productName: selectedProduct?.productName || "",
       productSpec: selectedProduct?.productSpec || "",
       productCategoryName: selectedProduct?.categoryName || "",
-      processPlanId,
-      processName: selectedProcess?.processName || "",
-      processReportFactor: processFactor,
+      processPlanId: mainRouteStep?.processPlanId || selectedProcess?.id || "",
+      processName:
+        selectedRoute.length > 0
+          ? selectedRoute.map((step) => step.processPlanName).join(" -> ")
+          : selectedProcess?.processName || "",
+      processReportFactor: mainRouteStep?.reportFactor ?? processFactor,
       processPlannedQty,
       plannedQty,
       dueDate,
-      departmentName: selectedProcess?.departmentName || "",
+      departmentName: mainRouteStep?.departmentName || selectedProcess?.departmentName || "",
       workers: selectedProcess?.defaultWorkers || [],
+      processRouteSteps:
+        selectedRoute.length > 0
+          ? selectedRoute.map((step) => ({
+              stepNo: step.stepNo,
+              processPlanId: step.processPlanId,
+              processPlanName: step.processPlanName,
+              reportFactor: step.reportFactor,
+              processPlannedQty: step.processPlannedQty,
+              departmentName: step.departmentName || "",
+            }))
+          : undefined,
       note: note.trim(),
       createdAt: new Date().toISOString(),
     };
@@ -257,7 +305,6 @@ export default function WorkOrdersPage() {
     setProductId("");
     setPlannedQty(0);
     setDueDate("");
-    setProcessPlanId("");
     setNote("");
   };
 
@@ -408,29 +455,43 @@ export default function WorkOrdersPage() {
               />
             </label>
 
-            <label className="text-sm text-zinc-700">
-              {copy.processPlan}
-              <select
-                required
-                value={processPlanId}
-                onChange={(e) => setProcessPlanId(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none focus:border-zinc-500"
-              >
-                <option value="">{copy.processPlan}</option>
-                {processPlans.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.processName}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {processPlans.length === 0 ? <p className="text-xs text-amber-600 md:col-span-2">{copy.noProcess}</p> : null}
+            {selectedRoute.length > 0 ? (
+              <div className="text-sm text-zinc-700 md:col-span-2">
+                <p>{copy.processRoute}</p>
+                <div className="mt-1 overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-50">
+                  <table className="w-full text-left text-xs">
+                    <thead className="text-zinc-500">
+                      <tr>
+                        <th className="px-3 py-2">{copy.routeStep}</th>
+                        <th className="px-3 py-2">{copy.processName}</th>
+                        <th className="px-3 py-2">{copy.processFactor}</th>
+                        <th className="px-3 py-2">{copy.routePlannedQty}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedRoute.map((step) => (
+                        <tr key={`${step.processPlanId}_${step.stepNo}`} className="border-t border-zinc-200 text-zinc-700">
+                          <td className="px-3 py-2">{step.stepNo}</td>
+                          <td className="px-3 py-2">{step.processPlanName}</td>
+                          <td className="px-3 py-2">{step.reportFactor}%</td>
+                          <td className="px-3 py-2">{step.processPlannedQty}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-amber-600 md:col-span-2">
+                {selectedProduct ? copy.noRoute : copy.noProduct}
+              </p>
+            )}
 
             <label className="text-sm text-zinc-700">
               {copy.processFactor}
               <input
                 type="text"
-                value={`${processFactor}%`}
+                value={selectedRoute.length > 0 ? "-" : `${processFactor}%`}
                 readOnly
                 className="mt-1 w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-2 text-zinc-700"
               />
