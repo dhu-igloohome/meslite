@@ -17,11 +17,14 @@ import { SelectInput, TextAreaInput, TextInput } from "@/components/ui/form-elem
 import { useMesliteSession } from "../../_lib/session";
 
 type ProductType = "part" | "component" | "auxiliary" | "finished";
-type ProcessMode = "sort" | "add" | "copy";
-
 type ProductCategory = {
   id: string;
   name: string;
+};
+
+type ProcessPlan = {
+  id: string;
+  processName: string;
 };
 
 type ProductRecord = {
@@ -34,13 +37,15 @@ type ProductRecord = {
   categoryName: string;
   imagePath: string;
   drawingPath: string;
-  processMode: ProcessMode;
+  processPlanId: string;
+  processPlanName: string;
   note: string;
   createdAt: string;
 };
 
 const CATEGORIES_KEY = "meslite_product_categories";
 const PRODUCTS_KEY = "meslite_products";
+const PROCESS_PLANS_KEY = "meslite_process_plans";
 
 const typePrefix: Record<ProductType, string> = {
   part: "1",
@@ -65,12 +70,9 @@ const text = {
     openCategorySetup: "新增产品分类",
     note: "备注",
     drawingPath: "产品图纸路径或 URL",
-    processMode: "工序编制",
-    processModes: {
-      sort: "排序现有工序",
-      add: "添加工序",
-      copy: "复制其他产品工序",
-    },
+    processPlan: "工艺编制",
+    noProcessPlan: "暂无工艺编制，请先创建工艺编制。",
+    openProcessPlanning: "新增工艺编制",
     save: "保存",
     saveOk: "产品保存成功。",
     typeOptions: {
@@ -97,12 +99,9 @@ const text = {
     openCategorySetup: "Add Product Category",
     note: "Note",
     drawingPath: "Product drawing path or URL",
-    processMode: "Process planning",
-    processModes: {
-      sort: "Sort existing process steps",
-      add: "Add process step",
-      copy: "Copy process from another product",
-    },
+    processPlan: "Process plan",
+    noProcessPlan: "No process plans yet. Please create one first.",
+    openProcessPlanning: "Add Process Plan",
     save: "Save",
     saveOk: "Product saved successfully.",
     typeOptions: {
@@ -163,14 +162,29 @@ export default function ProductCenterPage() {
       return [];
     }
   });
+  const [processPlans] = useState<ProcessPlan[]>(() => {
+    if (typeof window === "undefined") {
+      return [];
+    }
+    const raw = window.localStorage.getItem(PROCESS_PLANS_KEY);
+    if (!raw) {
+      return [];
+    }
+    try {
+      const parsed = JSON.parse(raw) as ProcessPlan[];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
   const [productType, setProductType] = useState<ProductType>("part");
   const [imagePath, setImagePath] = useState("");
   const [productName, setProductName] = useState("");
   const [productSpec, setProductSpec] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [processPlanId, setProcessPlanId] = useState("");
   const [note, setNote] = useState("");
   const [drawingPath, setDrawingPath] = useState("");
-  const [processMode, setProcessMode] = useState<ProcessMode>("sort");
   const [message, setMessage] = useState("");
   const productCode = useMemo(() => nextCode(productType, products), [productType, products]);
 
@@ -187,6 +201,7 @@ export default function ProductCenterPage() {
   const saveProduct = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const categoryName = categories.find((c) => c.id === categoryId)?.name || "";
+    const processPlanName = processPlans.find((p) => p.id === processPlanId)?.processName || "";
     const item: ProductRecord = {
       id: `prod_${Date.now()}`,
       productType,
@@ -197,7 +212,8 @@ export default function ProductCenterPage() {
       categoryName,
       imagePath: imagePath.trim(),
       drawingPath: drawingPath.trim(),
-      processMode,
+      processPlanId,
+      processPlanName,
       note: note.trim(),
       createdAt: new Date().toISOString(),
     };
@@ -210,7 +226,7 @@ export default function ProductCenterPage() {
     setDrawingPath("");
     setNote("");
     setCategoryId("");
-    setProcessMode("sort");
+    setProcessPlanId("");
   };
 
   if (!session) {
@@ -303,14 +319,35 @@ export default function ProductCenterPage() {
               <TextInput type="text" value={drawingPath} onChange={(e) => setDrawingPath(e.target.value)} />
             </label>
 
-            <label className="text-sm text-slate-700 md:col-span-2">
-              {copy.processMode}
-              <SelectInput value={processMode} onChange={(e) => setProcessMode(e.target.value as ProcessMode)}>
-                <option value="sort">{copy.processModes.sort}</option>
-                <option value="add">{copy.processModes.add}</option>
-                <option value="copy">{copy.processModes.copy}</option>
-              </SelectInput>
-            </label>
+            <div className="text-sm text-slate-700 md:col-span-2">
+              <p>{copy.processPlan}</p>
+              <div className="mt-1 flex flex-wrap gap-2">
+                <SelectInput
+                  value={processPlanId}
+                  onChange={(e) => setProcessPlanId(e.target.value)}
+                  aria-label={copy.processPlan}
+                  className="min-w-64"
+                >
+                  <option value="">{copy.processPlan}</option>
+                  {processPlans.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.processName}
+                    </option>
+                  ))}
+                </SelectInput>
+                <SecondaryButton
+                  type="button"
+                  onClick={() => router.push("/meslite/master-data/process-planning")}
+                  className="text-xs"
+                >
+                  <FolderPlus className="h-4 w-4" />
+                  {copy.openProcessPlanning}
+                </SecondaryButton>
+              </div>
+              {processPlans.length === 0 ? (
+                <p className="mt-2 text-xs text-amber-600">{copy.noProcessPlan}</p>
+              ) : null}
+            </div>
 
             <div className="md:col-span-2">
               <PrimaryButton type="submit">
@@ -333,7 +370,7 @@ export default function ProductCenterPage() {
                   <DataTableHeaderCell>Name</DataTableHeaderCell>
                   <DataTableHeaderCell>Spec</DataTableHeaderCell>
                   <DataTableHeaderCell>Category</DataTableHeaderCell>
-                  <DataTableHeaderCell>Process</DataTableHeaderCell>
+                  <DataTableHeaderCell>{copy.processPlan}</DataTableHeaderCell>
                 </tr>
               </DataTableHead>
               <DataTableBody>
@@ -343,7 +380,7 @@ export default function ProductCenterPage() {
                     <DataTableCell>{item.productName}</DataTableCell>
                     <DataTableCell>{item.productSpec}</DataTableCell>
                     <DataTableCell>{item.categoryName || "-"}</DataTableCell>
-                    <DataTableCell>{copy.processModes[item.processMode]}</DataTableCell>
+                    <DataTableCell>{item.processPlanName || "-"}</DataTableCell>
                   </DataTableRow>
                 ))}
               </DataTableBody>
