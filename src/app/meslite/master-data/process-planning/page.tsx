@@ -40,7 +40,7 @@ const text = {
     reportFactor: "报工系数（%）",
     reportHint: "创建订单/工单时，计划数量 * 报工系数 = 该工序计划数量。",
     department: "生产部门",
-    setDepartment: "设置部门",
+    setDepartment: "新增部门",
     newDepartment: "新建部门",
     departmentName: "部门名称",
     confirmDepartment: "确认",
@@ -74,7 +74,7 @@ const text = {
     reportHint:
       "When creating order/work order, planned quantity * reporting factor = this process planned quantity.",
     department: "Production Department",
-    setDepartment: "Setup Department",
+    setDepartment: "Add Department",
     newDepartment: "Create Department",
     departmentName: "Department Name",
     confirmDepartment: "Confirm",
