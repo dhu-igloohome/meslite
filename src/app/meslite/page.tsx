@@ -1,7 +1,21 @@
 "use client";
 
 import { useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  AlertTriangle,
+  ArrowUpRight,
+  Blocks,
+  ChevronRight,
+  ClipboardList,
+  Cog,
+  Factory,
+  QrCode,
+  Settings2,
+  TrendingDown,
+  TrendingUp,
+  Wrench,
+} from "lucide-react";
 import { useMesliteSession } from "./_lib/session";
 
 const text = {
@@ -19,8 +33,11 @@ const text = {
     ],
     statLabels: ["待处理订单", "进行中任务", "今日报工", "异常提醒"],
     statValues: ["128", "46", "214", "3"],
+    statTrends: ["+12.4%", "+6.2%", "+18.1%", "-2.7%"],
+    statTrendWords: ["较昨日", "较昨日", "较昨日", "较昨日"],
     overviewTitle: "系统概览",
     overviewText: "统一管理订单、任务、报工与主数据，支持移动扫码查询与系统级配置。",
+    navSection: "业务导航",
   },
   en: {
     title: "MESLite",
@@ -36,13 +53,15 @@ const text = {
     ],
     statLabels: ["Pending Orders", "Running Tasks", "Reports Today", "Alerts"],
     statValues: ["128", "46", "214", "3"],
+    statTrends: ["+12.4%", "+6.2%", "+18.1%", "-2.7%"],
+    statTrendWords: ["vs yesterday", "vs yesterday", "vs yesterday", "vs yesterday"],
     overviewTitle: "Platform Overview",
     overviewText:
       "Centralize order, task, reporting and master data operations with mobile scan query and system-level settings.",
+    navSection: "Operations",
   },
 };
 
-const moduleIcons = ["OM", "TM", "RM", "MD", "FS", "SQ", "SS"];
 const moduleRoutes = [
   "/meslite/work-orders",
   "/meslite/tasks",
@@ -53,8 +72,47 @@ const moduleRoutes = [
   "/meslite/system-settings",
 ];
 
+const metricSparklines = [
+  [38, 42, 40, 46, 44, 50, 52],
+  [22, 25, 23, 28, 30, 31, 33],
+  [56, 58, 60, 65, 67, 70, 74],
+  [18, 16, 17, 15, 14, 13, 12],
+];
+
+const moduleIcons = [ClipboardList, Wrench, Factory, Blocks, Cog, QrCode, Settings2];
+const metricIcons = [ClipboardList, Wrench, Factory, AlertTriangle];
+
+function Sparkline({ values, negative = false }: { values: number[]; negative?: boolean }) {
+  const width = 100;
+  const height = 28;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const points = values
+    .map((value, idx) => {
+      const x = (idx / (values.length - 1)) * width;
+      const y = height - ((value - min) / range) * (height - 4) - 2;
+      return `${x},${y}`;
+    })
+    .join(" ");
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} className="h-7 w-full">
+      <polyline
+        fill="none"
+        stroke={negative ? "#dc2626" : "#16a34a"}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        points={points}
+      />
+    </svg>
+  );
+}
+
 export default function MeslitePage() {
   const router = useRouter();
+  const pathname = usePathname();
   const { session, locale } = useMesliteSession();
 
   const copy = useMemo(() => text[locale], [locale]);
@@ -68,56 +126,116 @@ export default function MeslitePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f7f5] p-4 sm:p-6">
+    <main className="min-h-screen bg-[#f4f6f8] p-4 sm:p-6">
       <div className="mx-auto grid max-w-7xl gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
-        <aside className="lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:overflow-auto">
-          <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-[0_20px_50px_-30px_rgba(0,0,0,0.35)]">
-            <p className="text-xs tracking-[0.2em] text-zinc-500">{copy.greeting}</p>
-            <div className="mt-1 flex items-start justify-between">
+        <aside className="lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:overflow-hidden">
+          <section className="rounded-3xl border border-zinc-200/80 bg-white p-5 shadow-[0_24px_60px_-38px_rgba(15,23,42,.45)]">
+            <p className="text-[11px] tracking-[0.18em] text-zinc-500">{copy.greeting}</p>
+            <div className="mt-2 flex items-start justify-between">
               <div>
                 <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">{copy.title}</h1>
               </div>
-              <span className="rounded-full border border-zinc-200 px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-zinc-600">
+              <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-violet-700">
                 Premium
               </span>
             </div>
           </section>
 
-          <section className="mt-4 rounded-3xl border border-black/5 bg-white p-4 shadow-[0_20px_50px_-30px_rgba(0,0,0,0.35)]">
-            <div className="grid grid-cols-1 gap-3">
+          <section className="mt-4 rounded-3xl border border-zinc-200/80 bg-white p-4 shadow-[0_24px_60px_-40px_rgba(15,23,42,.45)]">
+            <p className="mb-3 px-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
+              {copy.navSection}
+            </p>
+            <div className="grid grid-cols-1 gap-2">
               {copy.modules.map((moduleName, index) => (
-                <button
-                  key={moduleName}
-                  type="button"
-                  onClick={() => goModule(index)}
-                  className="group rounded-2xl border border-zinc-100 bg-zinc-50 p-3 text-left transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
-                >
-                  <div className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-zinc-300 text-[10px] font-semibold tracking-wider text-zinc-600">
-                    {moduleIcons[index]}
-                  </div>
-                  <p className="mt-3 text-xs font-medium leading-4 text-zinc-800">{moduleName}</p>
-                </button>
+                (() => {
+                  const Icon = moduleIcons[index];
+                  const isActive = pathname?.startsWith(moduleRoutes[index]);
+                  return (
+                    <button
+                      key={moduleName}
+                      type="button"
+                      onClick={() => goModule(index)}
+                      className={`group flex items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
+                        isActive
+                          ? "border-violet-200 bg-violet-50/80 shadow-[0_10px_30px_-24px_rgba(109,40,217,.8)]"
+                          : "border-zinc-100 bg-zinc-50/80 hover:-translate-y-0.5 hover:border-zinc-200 hover:bg-white hover:shadow-md"
+                      }`}
+                    >
+                      <span
+                        className={`inline-flex h-8 w-8 items-center justify-center rounded-xl ${
+                          isActive
+                            ? "bg-violet-600 text-white"
+                            : "border border-zinc-200 bg-white text-zinc-600 group-hover:border-zinc-300"
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <span className="min-w-0 flex-1 text-sm font-medium text-zinc-800">{moduleName}</span>
+                      <ChevronRight
+                        className={`h-4 w-4 transition ${
+                          isActive ? "text-violet-600" : "text-zinc-400 group-hover:translate-x-0.5"
+                        }`}
+                      />
+                    </button>
+                  );
+                })()
               ))}
             </div>
           </section>
         </aside>
 
         <section>
-          <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {copy.statLabels.map((label, index) => (
-            <div
-              key={label}
-              className="rounded-2xl border border-black/5 bg-white px-4 py-4 shadow-[0_20px_40px_-35px_rgba(0,0,0,0.55)]"
-            >
-              <p className="text-3xl font-semibold leading-none text-zinc-900">{copy.statValues[index]}</p>
-              <p className="mt-2 text-xs tracking-wide text-zinc-500">{label}</p>
-            </div>
-          ))}
+          <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {copy.statLabels.map((label, index) => {
+              const trend = copy.statTrends[index];
+              const isNegative = trend.startsWith("-");
+              const StatIcon = metricIcons[index];
+              return (
+                <article
+                  key={label}
+                  className="group rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-[0_24px_50px_-40px_rgba(15,23,42,.55)] transition hover:-translate-y-0.5 hover:shadow-[0_30px_60px_-40px_rgba(15,23,42,.65)]"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500">{label}</p>
+                      <p className="text-3xl font-semibold leading-none tracking-tight text-zinc-900">
+                        {copy.statValues[index]}
+                      </p>
+                    </div>
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-100 text-zinc-600">
+                      <StatIcon className="h-4 w-4" />
+                    </span>
+                  </div>
+
+                  <div className="mt-3">
+                    <Sparkline values={metricSparklines[index]} negative={isNegative} />
+                  </div>
+
+                  <div className="mt-2 flex items-center justify-between">
+                    <p
+                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                        isNegative ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700"
+                      }`}
+                    >
+                      {isNegative ? <TrendingDown className="h-3.5 w-3.5" /> : <TrendingUp className="h-3.5 w-3.5" />}
+                      {trend}
+                    </p>
+                    <p className="text-xs text-zinc-500">{copy.statTrendWords[index]}</p>
+                  </div>
+                </article>
+              );
+            })}
           </section>
 
-          <section className="mt-4 rounded-3xl border border-black/5 bg-white p-4 text-sm text-zinc-700 shadow-[0_20px_50px_-30px_rgba(0,0,0,0.35)]">
-            <h2 className="text-xl font-semibold tracking-tight text-zinc-900">{copy.overviewTitle}</h2>
-            <p className="mt-2 text-zinc-600">{copy.overviewText}</p>
+          <section className="mt-4 rounded-3xl border border-zinc-200/80 bg-white p-5 text-sm text-zinc-700 shadow-[0_24px_60px_-40px_rgba(15,23,42,.55)]">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-xl font-semibold tracking-tight text-zinc-900">{copy.overviewTitle}</h2>
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-violet-700">
+                Live
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </span>
+            </div>
+            <p className="mt-2 max-w-3xl text-zinc-600">{copy.overviewText}</p>
           </section>
         </section>
       </div>
