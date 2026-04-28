@@ -105,6 +105,7 @@ const text = {
     workerInUse: "该人员已被工艺编制引用，暂不可删除。",
     departmentForceDeleteConfirm: "该部门已被 {count} 条工艺编制引用，确认删除并清理关联吗？",
     workerForceDeleteConfirm: "该人员已被 {count} 条工艺编制引用，确认删除并从工艺编制中移除吗？",
+    affectedPlansPrefix: "受影响工艺：",
     invite: "转发邀请好友",
     scanJoin: "扫码加入",
     manualAdd: "手动添加",
@@ -147,6 +148,7 @@ const text = {
       "This department is referenced by {count} process plans. Delete anyway and clean references?",
     workerForceDeleteConfirm:
       "This worker is referenced by {count} process plans. Delete anyway and remove from plans?",
+    affectedPlansPrefix: "Affected plans:",
     invite: "Forward Invite",
     scanJoin: "Join by Scan",
     manualAdd: "Manual Add",
@@ -312,6 +314,17 @@ export default function SystemSettingsPage() {
     }
   };
 
+  const summarizePlanNames = (plans: ProcessPlan[]) => {
+    const names = plans
+      .map((item) => item.processName?.trim())
+      .filter((name): name is string => Boolean(name));
+    if (names.length === 0) {
+      return "-";
+    }
+    const preview = names.slice(0, 5).join("、");
+    return names.length > 5 ? `${preview} ...` : preview;
+  };
+
   const appendLog = (action: string, detail: string) => {
     const entry: OperationLog = {
       id: nextId(
@@ -370,8 +383,9 @@ export default function SystemSettingsPage() {
     const plans = readProcessPlans();
     const affectedPlans = plans.filter((item) => item.departmentId === id);
     if (affectedPlans.length > 0) {
+      const affectedNames = summarizePlanNames(affectedPlans);
       const confirmed = window.confirm(
-        copy.departmentForceDeleteConfirm.replace("{count}", String(affectedPlans.length)),
+        `${copy.departmentForceDeleteConfirm.replace("{count}", String(affectedPlans.length))}\n${copy.affectedPlansPrefix} ${affectedNames}`,
       );
       if (!confirmed) {
         setMessage(copy.departmentInUse);
@@ -446,7 +460,10 @@ export default function SystemSettingsPage() {
     const plans = readProcessPlans();
     const affectedPlans = plans.filter((item) => item.defaultWorkers.includes(target.name));
     if (affectedPlans.length > 0) {
-      const confirmed = window.confirm(copy.workerForceDeleteConfirm.replace("{count}", String(affectedPlans.length)));
+      const affectedNames = summarizePlanNames(affectedPlans);
+      const confirmed = window.confirm(
+        `${copy.workerForceDeleteConfirm.replace("{count}", String(affectedPlans.length))}\n${copy.affectedPlansPrefix} ${affectedNames}`,
+      );
       if (!confirmed) {
         setMessage(copy.workerInUse);
         return;
