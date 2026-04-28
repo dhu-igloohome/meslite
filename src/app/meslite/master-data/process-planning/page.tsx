@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMesliteSession } from "../../_lib/session";
 
@@ -133,7 +133,7 @@ export default function ProcessPlanningPage() {
       return [];
     }
   });
-  const [workerOptions] = useState<WorkerOption[]>(() => {
+  const [workerOptions, setWorkerOptions] = useState<WorkerOption[]>(() => {
     if (typeof window === "undefined") {
       return [];
     }
@@ -158,6 +158,48 @@ export default function ProcessPlanningPage() {
   const [workers, setWorkers] = useState<string[]>([]);
   const [message, setMessage] = useState("");
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const syncFromSystemSettings = () => {
+      const rawDepartments = window.localStorage.getItem(DEPARTMENTS_KEY);
+      const rawWorkers = window.localStorage.getItem(WORKERS_KEY);
+
+      let nextDepartments: Department[] = [];
+      let nextWorkers: WorkerOption[] = [];
+
+      try {
+        const parsed = rawDepartments ? (JSON.parse(rawDepartments) as Department[]) : [];
+        nextDepartments = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        nextDepartments = [];
+      }
+
+      try {
+        const parsed = rawWorkers ? (JSON.parse(rawWorkers) as WorkerOption[]) : [];
+        nextWorkers = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        nextWorkers = [];
+      }
+
+      setDepartments(nextDepartments);
+      setWorkers((prev) =>
+        prev.filter((name) =>
+          nextWorkers.some((worker) => worker.name === name && (!departmentId || worker.departmentId === departmentId)),
+        ),
+      );
+      setWorkerOptions(nextWorkers);
+    };
+
+    syncFromSystemSettings();
+    window.addEventListener("storage", syncFromSystemSettings);
+    window.addEventListener("focus", syncFromSystemSettings);
+    document.addEventListener("visibilitychange", syncFromSystemSettings);
+    return () => {
+      window.removeEventListener("storage", syncFromSystemSettings);
+      window.removeEventListener("focus", syncFromSystemSettings);
+      document.removeEventListener("visibilitychange", syncFromSystemSettings);
+    };
+  }, [departmentId]);
 
   const savePlans = (next: ProcessPlan[]) => {
     setPlans(next);
