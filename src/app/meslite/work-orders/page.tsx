@@ -5,10 +5,11 @@ import { BackButton } from "@/components/ui/back-button";
 import { PrimaryButton, SecondaryButton } from "@/components/ui/buttons";
 import { FormField } from "@/components/ui/form-field";
 import { SelectInput, TextAreaInput, TextInput } from "@/components/ui/form-elements";
+import { ModalDialog } from "@/components/ui/modal-dialog";
 import { PageHeader } from "@/components/ui/page-header";
 import { PageShell } from "@/components/ui/page-shell";
 import { SectionCard } from "@/components/ui/section-card";
-import { Download, Printer, QrCode, X } from "lucide-react";
+import { Download, Printer, QrCode } from "lucide-react";
 import Image from "next/image";
 import QRCode from "qrcode";
 import { useMesliteSession } from "../_lib/session";
@@ -627,58 +628,32 @@ export default function WorkOrdersPage() {
           </form>
       </SectionCard>
 
-      {qrPreviewRecord ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-4 shadow-xl">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-zinc-900">{copy.qrPreviewTitle}</h3>
-              <SecondaryButton
-                type="button"
-                onClick={() => setQrPreviewRecord(null)}
-                className="min-h-9 min-w-9 px-0"
-                aria-label="Close QR Preview"
-              >
-                <X className="h-4 w-4" />
-              </SecondaryButton>
-            </div>
-            <p className="mb-3 text-xs text-zinc-600">{qrPreviewRecord.workOrderNo}</p>
-            <div className="flex justify-center rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-              {qrDataUrl ? (
-                <Image
-                  src={qrDataUrl}
-                  alt={`QR ${qrPreviewRecord.workOrderNo}`}
-                  width={224}
-                  height={224}
-                  unoptimized
-                  className="h-56 w-56"
-                />
-              ) : (
-                <div className="flex h-56 w-56 items-center justify-center text-xs text-zinc-500">{copy.qrGenerating}</div>
-              )}
-            </div>
-            <div className="mt-3 flex justify-end gap-2">
-              <SecondaryButton
-                type="button"
-                onClick={downloadQr}
-                disabled={!qrDataUrl}
-                className="min-h-10 px-3 py-2 text-xs"
-              >
-                <Download className="h-3.5 w-3.5" />
-                {copy.qrDownload}
-              </SecondaryButton>
-              <PrimaryButton
-                type="button"
-                onClick={printQr}
-                disabled={!qrDataUrl}
-                className="min-h-10 px-3 py-2 text-xs"
-              >
-                <Printer className="h-3.5 w-3.5" />
-                {copy.qrPrint}
-              </PrimaryButton>
-            </div>
-          </div>
+      <ModalDialog
+        open={Boolean(qrPreviewRecord)}
+        title={copy.qrPreviewTitle}
+        onClose={() => setQrPreviewRecord(null)}
+        actions={
+          <>
+            <SecondaryButton type="button" onClick={downloadQr} disabled={!qrDataUrl} className="min-h-10 px-3 py-2 text-xs">
+              <Download className="h-3.5 w-3.5" />
+              {copy.qrDownload}
+            </SecondaryButton>
+            <PrimaryButton type="button" onClick={printQr} disabled={!qrDataUrl} className="min-h-10 px-3 py-2 text-xs">
+              <Printer className="h-3.5 w-3.5" />
+              {copy.qrPrint}
+            </PrimaryButton>
+          </>
+        }
+      >
+        {qrPreviewRecord ? <p className="mb-3 text-xs text-slate-600">{qrPreviewRecord.workOrderNo}</p> : null}
+        <div className="flex justify-center rounded-xl border border-slate-200 bg-slate-50 p-3">
+          {qrPreviewRecord && qrDataUrl ? (
+            <Image src={qrDataUrl} alt={`QR ${qrPreviewRecord.workOrderNo}`} width={224} height={224} unoptimized className="h-56 w-56" />
+          ) : (
+            <div className="flex h-56 w-56 items-center justify-center text-xs text-slate-500">{copy.qrGenerating}</div>
+          )}
         </div>
-      ) : null}
+      </ModalDialog>
     </PageShell>
   );
 }

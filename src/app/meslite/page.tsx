@@ -388,7 +388,7 @@ export default function MeslitePage() {
           </aside>
 
           <section>
-          <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {copy.statLabels.map((label, index) => {
               const trend = statTrends[index] || copy.statTrends[index];
               const isNegative = trend.startsWith("-");
@@ -428,7 +428,7 @@ export default function MeslitePage() {
                 </article>
               );
             })}
-          </section>
+          </div>
 
           <section className="mt-3 rounded-3xl border border-zinc-200/80 bg-white p-4 text-sm text-zinc-700 shadow-[0_24px_60px_-40px_rgba(15,23,42,.55)] sm:p-5">
             <div className="flex items-center justify-between gap-3">
