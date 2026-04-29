@@ -6,6 +6,7 @@ import { FileEdit, PlusCircle, Trash2 } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
 import { PrimaryButton, DangerOutlineButton, SecondaryButton } from "@/components/ui/buttons";
 import { CardContainer } from "@/components/ui/card-container";
+import { PageShell } from "@/components/ui/page-shell";
 import {
   DataTable,
   DataTableBody,
@@ -291,8 +292,7 @@ export default function ProcessPlanningPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 sm:p-6">
-      <div className="mx-auto max-w-7xl space-y-4">
+    <PageShell containerClassName="max-w-7xl space-y-4">
         <CardContainer className="p-5">
           <BackButton label={copy.backLabel} fallbackHref="/meslite/master-data" className="mb-3" />
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{copy.title}</h1>
@@ -491,7 +491,6 @@ export default function ProcessPlanningPage() {
             </form>
           </CardContainer>
         </div>
-      </div>
-    </main>
+    </PageShell>
   );
 }

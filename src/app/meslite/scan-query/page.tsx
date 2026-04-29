@@ -2,6 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { BackButton } from "@/components/ui/back-button";
+import { PrimaryButton } from "@/components/ui/buttons";
+import { FormField } from "@/components/ui/form-field";
+import { TextInput } from "@/components/ui/form-elements";
+import { PageHeader } from "@/components/ui/page-header";
+import { PageShell } from "@/components/ui/page-shell";
+import { SectionCard } from "@/components/ui/section-card";
 import { Search } from "lucide-react";
 import { useMesliteSession } from "../_lib/session";
 
@@ -112,85 +118,79 @@ export default function ScanQueryPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f7f5] p-4 sm:p-6">
-      <div className="mx-auto max-w-4xl">
-        <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-[0_16px_40px_-28px_rgba(0,0,0,.35)]">
-          <BackButton label={copy.backLabel} fallbackHref="/meslite" className="mb-3" />
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">{copy.title}</h1>
-          <p className="mt-1 text-sm text-zinc-500">{copy.subtitle}</p>
-        </section>
+    <PageShell containerClassName="max-w-4xl">
+      <PageHeader
+        title={copy.title}
+        subtitle={copy.subtitle}
+        pretitle={<BackButton label={copy.backLabel} fallbackHref="/meslite" className="mb-3" />}
+      />
 
-        <section className="mt-4 rounded-3xl border border-black/5 bg-white p-5 shadow-[0_16px_40px_-28px_rgba(0,0,0,.35)]">
+      <SectionCard>
           <form className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto]" onSubmit={onSearch}>
-            <label className="text-sm text-zinc-700">
-              {copy.inputLabel}
-              <input
+            <FormField label={copy.inputLabel}>
+              <TextInput
                 type="text"
                 value={queryNo}
                 onChange={(e) => setQueryNo(e.target.value)}
                 placeholder={copy.inputPlaceholder}
-                className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none focus:border-zinc-500"
+                className="mt-1"
               />
-            </label>
-            <button
-              type="submit"
-              className="inline-flex min-h-11 items-center justify-center gap-2 self-end rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800"
-            >
+            </FormField>
+            <PrimaryButton type="submit" className="self-end rounded-xl">
               <Search className="h-4 w-4" />
               {copy.query}
-            </button>
+            </PrimaryButton>
           </form>
-        </section>
+      </SectionCard>
 
-        <section className="mt-4 rounded-3xl border border-black/5 bg-white p-5 shadow-[0_16px_40px_-28px_rgba(0,0,0,.35)]">
-          <h2 className="text-lg font-semibold text-zinc-900">{copy.resultTitle}</h2>
+      <SectionCard>
+          <h2 className="text-lg font-semibold text-slate-900">{copy.resultTitle}</h2>
           {!matched ? (
-            <div className="mt-2 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-              <p className="text-sm font-medium text-zinc-700">{copy.emptyTitle}</p>
-              <p className="mt-1 text-xs text-zinc-500">{copy.emptyDescription}</p>
+            <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-medium text-slate-700">{copy.emptyTitle}</p>
+              <p className="mt-1 text-xs text-slate-500">{copy.emptyDescription}</p>
             </div>
           ) : (
             <dl className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-                <dt className="text-xs text-zinc-500">{copy.workOrderNo}</dt>
-                <dd className="mt-1 text-sm font-medium text-zinc-900">{matched.workOrderNo}</dd>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <dt className="text-xs text-slate-500">{copy.workOrderNo}</dt>
+                <dd className="mt-1 text-sm font-medium text-slate-900">{matched.workOrderNo}</dd>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-                <dt className="text-xs text-zinc-500">{copy.recordType}</dt>
-                <dd className="mt-1 text-sm font-medium text-zinc-900">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <dt className="text-xs text-slate-500">{copy.recordType}</dt>
+                <dd className="mt-1 text-sm font-medium text-slate-900">
                   {matched.recordType === "order" ? copy.typeOrder : copy.typeWorkOrder}
                 </dd>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-                <dt className="text-xs text-zinc-500">{copy.product}</dt>
-                <dd className="mt-1 text-sm font-medium text-zinc-900">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <dt className="text-xs text-slate-500">{copy.product}</dt>
+                <dd className="mt-1 text-sm font-medium text-slate-900">
                   {matched.productCode} - {matched.productName}
                 </dd>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-                <dt className="text-xs text-zinc-500">{copy.process}</dt>
-                <dd className="mt-1 text-sm font-medium text-zinc-900">{matched.processName || "-"}</dd>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <dt className="text-xs text-slate-500">{copy.process}</dt>
+                <dd className="mt-1 text-sm font-medium text-slate-900">{matched.processName || "-"}</dd>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-                <dt className="text-xs text-zinc-500">{copy.plannedQty}</dt>
-                <dd className="mt-1 text-sm font-medium text-zinc-900">{matched.plannedQty}</dd>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <dt className="text-xs text-slate-500">{copy.plannedQty}</dt>
+                <dd className="mt-1 text-sm font-medium text-slate-900">{matched.plannedQty}</dd>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-                <dt className="text-xs text-zinc-500">{copy.processPlannedQty}</dt>
-                <dd className="mt-1 text-sm font-medium text-zinc-900">{matched.processPlannedQty}</dd>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <dt className="text-xs text-slate-500">{copy.processPlannedQty}</dt>
+                <dd className="mt-1 text-sm font-medium text-slate-900">{matched.processPlannedQty}</dd>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-                <dt className="text-xs text-zinc-500">{copy.dueDate}</dt>
-                <dd className="mt-1 text-sm font-medium text-zinc-900">{matched.dueDate || "-"}</dd>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <dt className="text-xs text-slate-500">{copy.dueDate}</dt>
+                <dd className="mt-1 text-sm font-medium text-slate-900">{matched.dueDate || "-"}</dd>
               </div>
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-                <dt className="text-xs text-zinc-500">{copy.createdAt}</dt>
-                <dd className="mt-1 text-sm font-medium text-zinc-900">{new Date(matched.createdAt).toLocaleString()}</dd>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <dt className="text-xs text-slate-500">{copy.createdAt}</dt>
+                <dd className="mt-1 text-sm font-medium text-slate-900">{new Date(matched.createdAt).toLocaleString()}</dd>
               </div>
             </dl>
           )}
-        </section>
-      </div>
-    </main>
+      </SectionCard>
+    </PageShell>
   );
 }

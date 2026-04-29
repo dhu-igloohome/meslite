@@ -3,6 +3,9 @@
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { BackButton } from "@/components/ui/back-button";
+import { PageHeader } from "@/components/ui/page-header";
+import { PageShell } from "@/components/ui/page-shell";
+import { SectionCard } from "@/components/ui/section-card";
 import { useMesliteSession } from "../_lib/session";
 
 const text = {
@@ -39,28 +42,26 @@ export default function MasterDataPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f7f5] p-4 sm:p-6">
-      <div className="mx-auto max-w-4xl">
-        <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-[0_16px_40px_-28px_rgba(0,0,0,.35)]">
-          <BackButton label={copy.backLabel} fallbackHref="/meslite" className="mb-3" />
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">{copy.title}</h1>
-          <p className="mt-1 text-sm text-zinc-500">{copy.subtitle}</p>
-        </section>
+    <PageShell containerClassName="max-w-4xl">
+      <PageHeader
+        title={copy.title}
+        subtitle={copy.subtitle}
+        pretitle={<BackButton label={copy.backLabel} fallbackHref="/meslite" className="mb-3" />}
+      />
 
-        <section className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+      <SectionCard className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {copy.modules.map((item, index) => (
             <button
               key={item}
               type="button"
               onClick={() => router.push(moduleRoutes[index])}
-              className="rounded-2xl border border-black/5 bg-white p-5 text-left shadow-[0_12px_30px_-28px_rgba(0,0,0,.8)] transition hover:-translate-y-0.5 hover:shadow-md"
+              className="rounded-xl border border-slate-200 bg-slate-50 p-5 text-left transition hover:-translate-y-0.5 hover:bg-white hover:shadow-sm"
             >
-              <p className="text-lg font-semibold text-zinc-900">{item}</p>
-              <p className="mt-1 text-sm text-zinc-500">{copy.enterHint}</p>
+              <p className="text-lg font-semibold text-slate-900">{item}</p>
+              <p className="mt-1 text-sm text-slate-500">{copy.enterHint}</p>
             </button>
           ))}
-        </section>
-      </div>
-    </main>
+      </SectionCard>
+    </PageShell>
   );
 }

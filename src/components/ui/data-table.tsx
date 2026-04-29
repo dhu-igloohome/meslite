@@ -7,7 +7,7 @@ type DataTableProps = {
 
 export function DataTable({ children, className = "" }: DataTableProps) {
   return (
-    <div className={`overflow-x-auto rounded-lg border border-slate-200 ${className}`.trim()}>
+    <div className={`overflow-x-auto rounded-xl border border-slate-200 bg-white ${className}`.trim()}>
       <table className="w-full border-collapse text-left text-sm">{children}</table>
     </div>
   );
@@ -26,7 +26,7 @@ export function DataTableBody({ children }: { children: ReactNode }) {
 }
 
 export function DataTableRow({ children, striped }: { children: ReactNode; striped?: boolean }) {
-  return <tr className={`${striped ? "bg-slate-50/40" : "bg-white"} border-t border-slate-100 text-slate-700`}>{children}</tr>;
+  return <tr className={`${striped ? "bg-slate-50/50" : "bg-white"} border-t border-slate-100 text-slate-700`}>{children}</tr>;
 }
 
 export function DataTableCell({ children, className = "" }: { children: ReactNode; className?: string }) {

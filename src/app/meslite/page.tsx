@@ -18,6 +18,7 @@ import {
   Wrench,
   X,
 } from "lucide-react";
+import { PageShell } from "@/components/ui/page-shell";
 import { useMesliteSession } from "./_lib/session";
 
 const text = {
@@ -318,8 +319,7 @@ export default function MeslitePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f4f6f8] p-4 md:p-6 lg:p-8">
-      <div className="mx-auto max-w-7xl">
+    <PageShell className="md:p-6 lg:p-8" containerClassName="max-w-7xl">
         <header className="mb-4 flex items-center justify-between rounded-2xl border border-zinc-200/80 bg-white px-4 py-3 shadow-[0_18px_40px_-34px_rgba(15,23,42,.55)] lg:hidden">
           <div>
             <p className="text-[11px] uppercase tracking-[0.12em] text-zinc-500">{copy.greeting}</p>
@@ -341,7 +341,7 @@ export default function MeslitePage() {
               <p className="text-[11px] tracking-[0.18em] text-zinc-500">{copy.greeting}</p>
               <div className="mt-2 flex items-start justify-between">
                 <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">{copy.title}</h1>
-                <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-violet-700">
+                <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-blue-700">
                   Premium
                 </span>
               </div>
@@ -361,14 +361,14 @@ export default function MeslitePage() {
                       onClick={() => goModule(route)}
                       className={`group flex min-h-11 items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
                         isActive
-                          ? "border-violet-200 bg-violet-50/80 shadow-[0_10px_30px_-24px_rgba(109,40,217,.8)]"
+                          ? "border-blue-200 bg-blue-50/80 shadow-[0_10px_30px_-24px_rgba(37,99,235,.45)]"
                           : "border-zinc-100 bg-zinc-50/80 hover:-translate-y-0.5 hover:border-zinc-200 hover:bg-white hover:shadow-md"
                       }`}
                     >
                       <span
                         className={`inline-flex h-8 w-8 items-center justify-center rounded-xl ${
                           isActive
-                            ? "bg-violet-600 text-white"
+                            ? "bg-blue-600 text-white"
                             : "border border-zinc-200 bg-white text-zinc-600 group-hover:border-zinc-300"
                         }`}
                       >
@@ -377,7 +377,7 @@ export default function MeslitePage() {
                       <span className="min-w-0 flex-1 text-sm font-medium text-zinc-800">{label}</span>
                       <ChevronRight
                         className={`h-4 w-4 transition ${
-                          isActive ? "text-violet-600" : "text-zinc-400 group-hover:translate-x-0.5"
+                          isActive ? "text-blue-600" : "text-zinc-400 group-hover:translate-x-0.5"
                         }`}
                       />
                     </button>
@@ -433,7 +433,7 @@ export default function MeslitePage() {
           <section className="mt-3 rounded-3xl border border-zinc-200/80 bg-white p-4 text-sm text-zinc-700 shadow-[0_24px_60px_-40px_rgba(15,23,42,.55)] sm:p-5">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-lg font-semibold tracking-tight text-zinc-900 sm:text-xl">{copy.overviewTitle}</h2>
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-violet-700">
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-700">
                 Live
                 <ArrowUpRight className="h-3.5 w-3.5" />
               </span>
@@ -506,7 +506,6 @@ export default function MeslitePage() {
           </section>
         </section>
         </div>
-      </div>
 
       {isNavOpen ? (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
@@ -544,19 +543,19 @@ export default function MeslitePage() {
                     onClick={() => goModule(route)}
                     className={`group flex min-h-11 items-center gap-3 rounded-2xl border px-3 py-3 text-left ${
                       isActive
-                        ? "border-violet-200 bg-violet-50/80"
+                        ? "border-blue-200 bg-blue-50/80"
                         : "border-zinc-100 bg-zinc-50/80 active:bg-zinc-100"
                     }`}
                   >
                     <span
                       className={`inline-flex h-8 w-8 items-center justify-center rounded-xl ${
-                        isActive ? "bg-violet-600 text-white" : "border border-zinc-200 bg-white text-zinc-600"
+                        isActive ? "bg-blue-600 text-white" : "border border-zinc-200 bg-white text-zinc-600"
                       }`}
                     >
                       <Icon className="h-4 w-4" />
                     </span>
                     <span className="min-w-0 flex-1 text-sm font-medium text-zinc-800">{label}</span>
-                    <ChevronRight className={`h-4 w-4 ${isActive ? "text-violet-600" : "text-zinc-400"}`} />
+                    <ChevronRight className={`h-4 w-4 ${isActive ? "text-blue-600" : "text-zinc-400"}`} />
                   </button>
                 );
               })}
@@ -564,6 +563,6 @@ export default function MeslitePage() {
           </aside>
         </div>
       ) : null}
-    </main>
+    </PageShell>
   );
 }

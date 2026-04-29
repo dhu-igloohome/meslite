@@ -2,6 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { BackButton } from "@/components/ui/back-button";
+import { PageHeader } from "@/components/ui/page-header";
+import { PageShell } from "@/components/ui/page-shell";
+import { PrimaryButton } from "@/components/ui/buttons";
+import { SectionCard } from "@/components/ui/section-card";
+import { TextInput } from "@/components/ui/form-elements";
 import { useMesliteSession } from "../../_lib/session";
 
 type OrderWorkOrderCategory = {
@@ -85,53 +90,48 @@ export default function OrderWorkOrderCategoriesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f7f5] p-4 sm:p-6">
-      <div className="mx-auto max-w-4xl">
-        <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-[0_16px_40px_-28px_rgba(0,0,0,.35)]">
-          <BackButton label={copy.backLabel} fallbackHref="/meslite/master-data" className="mb-3" />
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">{copy.title}</h1>
-          <p className="mt-1 text-sm text-zinc-500">{copy.subtitle}</p>
-        </section>
+    <PageShell containerClassName="max-w-4xl">
+      <PageHeader
+        title={copy.title}
+        subtitle={copy.subtitle}
+        pretitle={<BackButton label={copy.backLabel} fallbackHref="/meslite/master-data" className="mb-3" />}
+      />
 
-        <section className="mt-4 rounded-3xl border border-black/5 bg-white p-5 shadow-[0_16px_40px_-28px_rgba(0,0,0,.35)]">
-          <h2 className="text-lg font-semibold text-zinc-900">{copy.existing}</h2>
+      <SectionCard>
+          <h2 className="text-lg font-semibold text-slate-900">{copy.existing}</h2>
           {categories.length === 0 ? (
-            <p className="mt-2 text-sm text-zinc-500">{copy.empty}</p>
+            <p className="mt-2 text-sm text-slate-500">{copy.empty}</p>
           ) : (
             <div className="mt-3 flex flex-wrap gap-2">
               {categories.map((item) => (
                 <span
                   key={item.id}
-                  className="rounded-full border border-zinc-300 bg-zinc-50 px-3 py-1.5 text-sm text-zinc-700"
+                  className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm text-slate-700"
                 >
                   {item.name}
                 </span>
               ))}
             </div>
           )}
-        </section>
+      </SectionCard>
 
-        <section className="mt-4 rounded-3xl border border-black/5 bg-white p-5 shadow-[0_16px_40px_-28px_rgba(0,0,0,.35)]">
-          <h2 className="text-lg font-semibold text-zinc-900">{copy.create}</h2>
+      <SectionCard>
+          <h2 className="text-lg font-semibold text-slate-900">{copy.create}</h2>
           <form className="mt-3 flex flex-wrap items-center gap-2" onSubmit={createCategory}>
-            <input
+            <TextInput
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={copy.input}
-              className="min-w-72 rounded-xl border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
+              className="min-w-72"
             />
-            <button
-              type="submit"
-              className="rounded-full bg-zinc-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-zinc-800"
-            >
+            <PrimaryButton type="submit">
               {copy.confirm}
-            </button>
+            </PrimaryButton>
           </form>
           {message ? <p className="mt-2 text-sm text-emerald-700">{message}</p> : null}
-        </section>
-      </div>
-    </main>
+      </SectionCard>
+    </PageShell>
   );
 }

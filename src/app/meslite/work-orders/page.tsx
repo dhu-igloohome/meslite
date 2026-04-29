@@ -2,6 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { BackButton } from "@/components/ui/back-button";
+import { PrimaryButton, SecondaryButton } from "@/components/ui/buttons";
+import { FormField } from "@/components/ui/form-field";
+import { SelectInput, TextAreaInput, TextInput } from "@/components/ui/form-elements";
+import { PageHeader } from "@/components/ui/page-header";
+import { PageShell } from "@/components/ui/page-shell";
+import { SectionCard } from "@/components/ui/section-card";
 import { Download, Printer, QrCode, X } from "lucide-react";
 import Image from "next/image";
 import QRCode from "qrcode";
@@ -402,22 +408,21 @@ export default function WorkOrdersPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f7f5] p-4 sm:p-6">
-      <div className="mx-auto max-w-6xl">
-        <section className="rounded-3xl border border-black/5 bg-white p-5 shadow-[0_16px_40px_-28px_rgba(0,0,0,.35)]">
-          <BackButton label={copy.backLabel} fallbackHref="/meslite" className="mb-3" />
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">{copy.title}</h1>
-          <p className="mt-1 text-sm text-zinc-500">{copy.subtitle}</p>
-        </section>
+    <PageShell>
+      <PageHeader
+        title={copy.title}
+        subtitle={copy.subtitle}
+        pretitle={<BackButton label={copy.backLabel} fallbackHref="/meslite" className="mb-3" />}
+      />
 
-        <section className="mt-4 rounded-3xl border border-black/5 bg-white p-5 shadow-[0_16px_40px_-28px_rgba(0,0,0,.35)]">
-          <h2 className="text-lg font-semibold text-zinc-900">{copy.listTitle}</h2>
+      <SectionCard>
+          <h2 className="text-lg font-semibold text-slate-900">{copy.listTitle}</h2>
           {records.length === 0 ? (
-            <p className="mt-2 text-sm text-zinc-500">{copy.empty}</p>
+            <p className="mt-2 text-sm text-slate-500">{copy.empty}</p>
           ) : (
-            <div className="mt-3 overflow-x-auto">
+            <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200">
               <table className="w-full text-left text-sm">
-                <thead className="text-zinc-500">
+                <thead className="bg-slate-50 text-slate-500">
                   <tr>
                     <th className="px-2 py-2">{copy.workOrderNo}</th>
                     <th className="px-2 py-2">{copy.category}</th>
@@ -430,7 +435,7 @@ export default function WorkOrdersPage() {
                 </thead>
                 <tbody>
                   {records.map((item) => (
-                    <tr key={item.id} className="border-t border-zinc-100 text-zinc-700">
+                    <tr key={item.id} className="border-t border-slate-100 text-slate-700">
                       <td className="px-2 py-2">{item.workOrderNo}</td>
                       <td className="px-2 py-2">{item.categoryName || "-"}</td>
                       <td className="px-2 py-2">{item.productName || "-"}</td>
@@ -438,14 +443,14 @@ export default function WorkOrdersPage() {
                       <td className="px-2 py-2">{item.processPlannedQty}</td>
                       <td className="px-2 py-2">{new Date(item.createdAt).toLocaleString()}</td>
                       <td className="px-2 py-2">
-                        <button
+                        <SecondaryButton
                           type="button"
                           onClick={() => setQrPreviewRecord(item)}
-                          className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-zinc-300 px-2.5 py-1 text-xs text-zinc-700 transition hover:bg-zinc-50"
+                          className="min-h-9 px-2.5 py-1 text-xs"
                         >
                           <QrCode className="h-3.5 w-3.5" />
                           {copy.qrCol}
-                        </button>
+                        </SecondaryButton>
                       </td>
                     </tr>
                   ))}
@@ -453,30 +458,26 @@ export default function WorkOrdersPage() {
               </table>
             </div>
           )}
-        </section>
+      </SectionCard>
 
-        <section className="mt-4 rounded-3xl border border-black/5 bg-white p-5 shadow-[0_16px_40px_-28px_rgba(0,0,0,.35)]">
-          <h2 className="text-xl font-semibold text-zinc-900">{copy.createTitle}</h2>
+      <SectionCard>
+          <h2 className="text-xl font-semibold text-slate-900">{copy.createTitle}</h2>
           <form className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2" onSubmit={createRecord}>
-            <label className="text-sm text-zinc-700">
-              {copy.recordType}
-              <select
+            <FormField label={copy.recordType}>
+              <SelectInput
                 value={recordType}
                 onChange={(e) => setRecordType(e.target.value as "order" | "work_order")}
-                className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none focus:border-zinc-500"
               >
                 <option value="order">{copy.recordTypeOptions.order}</option>
                 <option value="work_order">{copy.recordTypeOptions.work_order}</option>
-              </select>
-            </label>
+              </SelectInput>
+            </FormField>
 
-            <label className="text-sm text-zinc-700">
-              {copy.category}
-              <select
+            <FormField label={copy.category}>
+              <SelectInput
                 required
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none focus:border-zinc-500"
               >
                 <option value="">{copy.category}</option>
                 {categories.map((item) => (
@@ -484,17 +485,15 @@ export default function WorkOrdersPage() {
                     {item.name}
                   </option>
                 ))}
-              </select>
-            </label>
+              </SelectInput>
+            </FormField>
             {categories.length === 0 ? <p className="text-xs text-amber-600 md:col-span-2">{copy.noCategory}</p> : null}
 
-            <label className="text-sm text-zinc-700">
-              {copy.product}
-              <select
+            <FormField label={copy.product}>
+              <SelectInput
                 required
                 value={productId}
                 onChange={(e) => setProductId(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none focus:border-zinc-500"
               >
                 <option value="">{copy.product}</option>
                 {products.map((item) => (
@@ -502,52 +501,46 @@ export default function WorkOrdersPage() {
                     {item.productCode} - {item.productName}
                   </option>
                 ))}
-              </select>
-            </label>
+              </SelectInput>
+            </FormField>
             {products.length === 0 ? <p className="text-xs text-amber-600 md:col-span-2">{copy.noProduct}</p> : null}
 
-            <label className="text-sm text-zinc-700">
-              {copy.productSpec}
-              <input
+            <FormField label={copy.productSpec}>
+              <TextInput
                 type="text"
                 value={selectedProduct?.productSpec || ""}
                 readOnly
-                className="mt-1 w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-2 text-zinc-700"
+                className="bg-slate-50 text-slate-700"
               />
-            </label>
+            </FormField>
 
-            <label className="text-sm text-zinc-700">
-              {copy.productCategory}
-              <input
+            <FormField label={copy.productCategory}>
+              <TextInput
                 type="text"
                 value={selectedProduct?.categoryName || ""}
                 readOnly
-                className="mt-1 w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-2 text-zinc-700"
+                className="bg-slate-50 text-slate-700"
               />
-            </label>
+            </FormField>
 
-            <label className="text-sm text-zinc-700">
-              {copy.plannedQty}
-              <input
+            <FormField label={copy.plannedQty}>
+              <TextInput
                 type="number"
                 min={0}
                 required
                 value={plannedQty}
                 onChange={(e) => setPlannedQty(Number(e.target.value || 0))}
-                className="mt-1 w-full rounded-xl border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
               />
-            </label>
+            </FormField>
 
-            <label className="text-sm text-zinc-700">
-              {copy.dueDate}
-              <input
+            <FormField label={copy.dueDate}>
+              <TextInput
                 type="date"
                 required
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
               />
-            </label>
+            </FormField>
 
             {selectedRoute.length > 0 ? (
               <div className="text-sm text-zinc-700 md:col-span-2">
@@ -581,82 +574,72 @@ export default function WorkOrdersPage() {
               </p>
             )}
 
-            <label className="text-sm text-zinc-700">
-              {copy.processFactor}
-              <input
+            <FormField label={copy.processFactor}>
+              <TextInput
                 type="text"
                 value={selectedRoute.length > 0 ? "-" : `${processFactor}%`}
                 readOnly
-                className="mt-1 w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-2 text-zinc-700"
+                className="bg-slate-50 text-slate-700"
               />
-            </label>
+            </FormField>
 
-            <label className="text-sm text-zinc-700">
-              {copy.processPlannedQty}
-              <input
+            <FormField label={copy.processPlannedQty}>
+              <TextInput
                 type="text"
                 value={processPlannedQty}
                 readOnly
-                className="mt-1 w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-2 text-zinc-700"
+                className="bg-slate-50 text-slate-700"
               />
-            </label>
+            </FormField>
 
-            <label className="text-sm text-zinc-700">
-              {copy.department}
-              <input
+            <FormField label={copy.department}>
+              <TextInput
                 type="text"
                 value={selectedProcess?.departmentName || ""}
                 readOnly
-                className="mt-1 w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-2 text-zinc-700"
+                className="bg-slate-50 text-slate-700"
               />
-            </label>
+            </FormField>
 
-            <label className="text-sm text-zinc-700">
-              {copy.workers}
-              <input
+            <FormField label={copy.workers}>
+              <TextInput
                 type="text"
                 value={(selectedProcess?.defaultWorkers || []).join(", ")}
                 readOnly
-                className="mt-1 w-full rounded-xl border border-zinc-300 bg-zinc-50 px-3 py-2 text-zinc-700"
+                className="bg-slate-50 text-slate-700"
               />
-            </label>
+            </FormField>
 
-            <label className="text-sm text-zinc-700 md:col-span-2">
-              {copy.note}
-              <textarea
+            <FormField label={copy.note} className="md:col-span-2">
+              <TextAreaInput
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 rows={3}
-                className="mt-1 w-full rounded-xl border border-zinc-300 px-3 py-2 outline-none focus:border-zinc-500"
               />
-            </label>
+            </FormField>
 
             <div className="md:col-span-2">
-              <button
-                type="submit"
-                className="rounded-full bg-zinc-900 px-6 py-2 text-sm font-medium text-white transition hover:bg-zinc-800"
-              >
+              <PrimaryButton type="submit">
                 {copy.save}
-              </button>
+              </PrimaryButton>
               {message ? <p className="mt-2 text-sm text-emerald-700">{message}</p> : null}
             </div>
           </form>
-        </section>
-      </div>
+      </SectionCard>
 
       {qrPreviewRecord ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-4 shadow-xl">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-zinc-900">{copy.qrPreviewTitle}</h3>
-              <button
+              <SecondaryButton
                 type="button"
                 onClick={() => setQrPreviewRecord(null)}
-                className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600"
+                className="min-h-9 min-w-9 px-0"
                 aria-label="Close QR Preview"
               >
                 <X className="h-4 w-4" />
-              </button>
+              </SecondaryButton>
             </div>
             <p className="mb-3 text-xs text-zinc-600">{qrPreviewRecord.workOrderNo}</p>
             <div className="flex justify-center rounded-xl border border-zinc-200 bg-zinc-50 p-3">
@@ -674,28 +657,28 @@ export default function WorkOrdersPage() {
               )}
             </div>
             <div className="mt-3 flex justify-end gap-2">
-              <button
+              <SecondaryButton
                 type="button"
                 onClick={downloadQr}
                 disabled={!qrDataUrl}
-                className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-700 disabled:opacity-50"
+                className="min-h-10 px-3 py-2 text-xs"
               >
                 <Download className="h-3.5 w-3.5" />
                 {copy.qrDownload}
-              </button>
-              <button
+              </SecondaryButton>
+              <PrimaryButton
                 type="button"
                 onClick={printQr}
                 disabled={!qrDataUrl}
-                className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-50"
+                className="min-h-10 px-3 py-2 text-xs"
               >
                 <Printer className="h-3.5 w-3.5" />
                 {copy.qrPrint}
-              </button>
+              </PrimaryButton>
             </div>
           </div>
         </div>
       ) : null}
-    </main>
+    </PageShell>
   );
 }

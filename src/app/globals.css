@@ -1,8 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f3f6fb;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --surface-muted: #f8fafc;
+  --border: #dbe3ef;
+  --text-muted: #64748b;
+  --brand: #2563eb;
+  --brand-strong: #1d4ed8;
+  --success-bg: #ecfdf3;
+  --success-text: #047857;
+  --danger-bg: #fef2f2;
+  --danger-text: #b91c1c;
+  --radius-card: 1rem;
+  --radius-control: 0.75rem;
+  --shadow-card: 0 20px 45px -30px rgba(15, 23, 42, 0.28);
+  --shadow-elevated: 0 26px 55px -36px rgba(15, 23, 42, 0.35);
 }
 
 @theme inline {
@@ -12,15 +26,42 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), "Inter", "Helvetica Neue", Arial, sans-serif;
+}
+
+@layer components {
+  .mes-page {
+    @apply min-h-screen bg-[var(--background)] p-4 sm:p-6;
+  }
+
+  .mes-container {
+    @apply mx-auto max-w-6xl;
+  }
+
+  .mes-card {
+    @apply rounded-2xl border bg-[var(--surface)];
+    border-color: var(--border);
+    box-shadow: var(--shadow-card);
+  }
+
+  .mes-card-elevated {
+    box-shadow: var(--shadow-elevated);
+  }
+
+  .mes-section {
+    @apply mt-4 rounded-2xl border bg-[var(--surface)] p-5;
+    border-color: var(--border);
+    box-shadow: var(--shadow-card);
+  }
+
+  .mes-title {
+    @apply text-3xl font-semibold tracking-tight text-slate-900;
+  }
+
+  .mes-subtitle {
+    @apply mt-1 text-sm text-slate-500;
+  }
 }

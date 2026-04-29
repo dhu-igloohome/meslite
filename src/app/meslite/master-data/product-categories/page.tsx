@@ -6,6 +6,7 @@ import { FilePenLine, FolderPlus, Trash2 } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
 import { DangerOutlineButton, PrimaryButton, SecondaryButton } from "@/components/ui/buttons";
 import { CardContainer } from "@/components/ui/card-container";
+import { PageShell } from "@/components/ui/page-shell";
 import { TextInput } from "@/components/ui/form-elements";
 import { useMesliteSession } from "../../_lib/session";
 
@@ -168,8 +169,7 @@ export default function ProductCategoriesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 sm:p-6">
-      <div className="mx-auto max-w-4xl space-y-4">
+    <PageShell containerClassName="max-w-4xl space-y-4">
         <CardContainer className="p-5">
           <BackButton label={copy.backLabel} fallbackHref="/meslite/master-data" className="mb-3" />
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{copy.title}</h1>
@@ -233,7 +233,6 @@ export default function ProductCategoriesPage() {
           </form>
           {message ? <p className="mt-2 text-sm text-emerald-700">{message}</p> : null}
         </CardContainer>
-      </div>
-    </main>
+    </PageShell>
   );
 }
