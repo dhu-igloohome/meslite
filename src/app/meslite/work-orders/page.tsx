@@ -1,7 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BackButton } from "@/components/ui/back-button";
+import { Download, Printer, QrCode, X } from "lucide-react";
+import Image from "next/image";
+import QRCode from "qrcode";
 import { useMesliteSession } from "../_lib/session";
 
 type OrderTypeCategory = {
@@ -104,6 +107,11 @@ const text = {
     productName: "产品名称",
     processName: "工序名称",
     createdAt: "创建时间",
+    qrCol: "二维码",
+    qrPreviewTitle: "订单/工单二维码",
+    qrGenerating: "生成二维码中...",
+    qrPrint: "打印",
+    qrDownload: "下载PNG",
   },
   en: {
     title: "Order / Work Order Management",
@@ -139,15 +147,25 @@ const text = {
     productName: "Product Name",
     processName: "Process Name",
     createdAt: "Created At",
+    qrCol: "QR",
+    qrPreviewTitle: "Order/Work-Order QR",
+    qrGenerating: "Generating QR...",
+    qrPrint: "Print",
+    qrDownload: "Download PNG",
   },
 };
 
 function nextWorkOrderNo(records: WorkOrderRecord[]) {
+  const now = new Date();
+  const day =
+    `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
+  const prefix = `PO${day}`;
   const maxNumber = records
-    .map((item) => Number.parseInt(item.workOrderNo.replace(/^WO-/, ""), 10))
+    .filter((item) => item.workOrderNo.startsWith(prefix))
+    .map((item) => Number.parseInt(item.workOrderNo.slice(prefix.length), 10))
     .filter((n) => Number.isFinite(n))
     .reduce((acc, curr) => Math.max(acc, curr), 0);
-  return `WO-${String(maxNumber + 1).padStart(6, "0")}`;
+  return `${prefix}${String(maxNumber + 1).padStart(3, "0")}`;
 }
 
 function nextRecordId(records: WorkOrderRecord[]) {
@@ -233,6 +251,8 @@ export default function WorkOrdersPage() {
   const [dueDate, setDueDate] = useState("");
   const [note, setNote] = useState("");
   const [message, setMessage] = useState("");
+  const [qrPreviewRecord, setQrPreviewRecord] = useState<WorkOrderRecord | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState("");
 
   const selectedProduct = products.find((item) => item.id === productId);
   const selectedRoute =
@@ -250,6 +270,76 @@ export default function WorkOrdersPage() {
   const saveRecords = (next: WorkOrderRecord[]) => {
     setRecords(next);
     localStorage.setItem(WORK_ORDERS_KEY, JSON.stringify(next));
+  };
+
+  useEffect(() => {
+    let isCancelled = false;
+    const generateQr = async () => {
+      if (!qrPreviewRecord) {
+        setQrDataUrl("");
+        return;
+      }
+      try {
+        const origin = window.location.origin;
+        const payload = `${origin}/meslite/scan-query?workOrderNo=${encodeURIComponent(qrPreviewRecord.workOrderNo)}`;
+        const dataUrl = await QRCode.toDataURL(payload, {
+          errorCorrectionLevel: "M",
+          margin: 1,
+          width: 260,
+        });
+        if (!isCancelled) {
+          setQrDataUrl(dataUrl);
+        }
+      } catch {
+        if (!isCancelled) {
+          setQrDataUrl("");
+        }
+      }
+    };
+    generateQr();
+    return () => {
+      isCancelled = true;
+    };
+  }, [qrPreviewRecord]);
+
+  const printQr = () => {
+    if (!qrPreviewRecord || !qrDataUrl) {
+      return;
+    }
+    const win = window.open("", "_blank", "width=420,height=520");
+    if (!win) {
+      return;
+    }
+    win.document.write(`<!doctype html>
+      <html>
+      <head>
+        <title>${qrPreviewRecord.workOrderNo}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 24px; text-align: center; }
+          img { width: 260px; height: 260px; }
+          .no { margin-top: 12px; font-size: 18px; font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <img src="${qrDataUrl}" alt="QR code" />
+        <div class="no">${qrPreviewRecord.workOrderNo}</div>
+      </body>
+      </html>`);
+    win.document.close();
+    win.focus();
+    win.print();
+  };
+
+  const downloadQr = () => {
+    if (!qrPreviewRecord || !qrDataUrl) {
+      return;
+    }
+    const link = document.createElement("a");
+    link.href = qrDataUrl;
+    link.download = `${qrPreviewRecord.workOrderNo}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const createRecord = (e: React.FormEvent<HTMLFormElement>) => {
@@ -335,6 +425,7 @@ export default function WorkOrdersPage() {
                     <th className="px-2 py-2">{copy.processName}</th>
                     <th className="px-2 py-2">{copy.processPlannedQty}</th>
                     <th className="px-2 py-2">{copy.createdAt}</th>
+                    <th className="px-2 py-2">{copy.qrCol}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -346,6 +437,16 @@ export default function WorkOrdersPage() {
                       <td className="px-2 py-2">{item.processName || "-"}</td>
                       <td className="px-2 py-2">{item.processPlannedQty}</td>
                       <td className="px-2 py-2">{new Date(item.createdAt).toLocaleString()}</td>
+                      <td className="px-2 py-2">
+                        <button
+                          type="button"
+                          onClick={() => setQrPreviewRecord(item)}
+                          className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-zinc-300 px-2.5 py-1 text-xs text-zinc-700 transition hover:bg-zinc-50"
+                        >
+                          <QrCode className="h-3.5 w-3.5" />
+                          {copy.qrCol}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -542,6 +643,59 @@ export default function WorkOrdersPage() {
           </form>
         </section>
       </div>
+
+      {qrPreviewRecord ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-4 shadow-xl">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-zinc-900">{copy.qrPreviewTitle}</h3>
+              <button
+                type="button"
+                onClick={() => setQrPreviewRecord(null)}
+                className="inline-flex min-h-9 min-w-9 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600"
+                aria-label="Close QR Preview"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mb-3 text-xs text-zinc-600">{qrPreviewRecord.workOrderNo}</p>
+            <div className="flex justify-center rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+              {qrDataUrl ? (
+                <Image
+                  src={qrDataUrl}
+                  alt={`QR ${qrPreviewRecord.workOrderNo}`}
+                  width={224}
+                  height={224}
+                  unoptimized
+                  className="h-56 w-56"
+                />
+              ) : (
+                <div className="flex h-56 w-56 items-center justify-center text-xs text-zinc-500">{copy.qrGenerating}</div>
+              )}
+            </div>
+            <div className="mt-3 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={downloadQr}
+                disabled={!qrDataUrl}
+                className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-medium text-zinc-700 disabled:opacity-50"
+              >
+                <Download className="h-3.5 w-3.5" />
+                {copy.qrDownload}
+              </button>
+              <button
+                type="button"
+                onClick={printQr}
+                disabled={!qrDataUrl}
+                className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2 text-xs font-medium text-white disabled:opacity-50"
+              >
+                <Printer className="h-3.5 w-3.5" />
+                {copy.qrPrint}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
