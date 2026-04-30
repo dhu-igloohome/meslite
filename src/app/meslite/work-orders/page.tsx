@@ -25,12 +25,15 @@ type ProductRecord = {
   productName: string;
   productSpec: string;
   categoryName: string;
+  routeTemplateId?: string;
+  routeTemplateName?: string;
   processRouteSteps?: {
     stepNo: number;
     processPlanId: string;
     processPlanName: string;
     departmentName: string;
     reportFactor: number;
+    defaultWorkers?: string[];
   }[];
 };
 
@@ -41,6 +44,23 @@ type ProcessPlan = {
   departmentName: string;
   productionMinutes: number;
   defaultWorkers: string[];
+};
+
+type RouteTemplate = {
+  id: string;
+  code: string;
+  name: string;
+  version: string;
+  status: "active" | "draft" | "inactive";
+  steps: {
+    stepNo: number;
+    processPlanId: string;
+    processPlanName: string;
+    reportFactor: number;
+    departmentName: string;
+    defaultWorkers?: string[];
+    stdMinutes?: number;
+  }[];
 };
 
 type WorkOrderRecord = {
@@ -78,6 +98,7 @@ const PRODUCTS_KEY = "meslite_products";
 const PROCESS_PLANS_KEY = "meslite_process_plans";
 const ORDER_TYPES_KEY = "meslite_order_workorder_categories";
 const WORK_ORDERS_KEY = "meslite_work_orders";
+const ROUTE_TEMPLATES_KEY = "meslite_route_templates";
 
 const text = {
   zh: {
@@ -250,6 +271,21 @@ export default function WorkOrdersPage() {
       return [];
     }
   });
+  const [routeTemplates] = useState<RouteTemplate[]>(() => {
+    if (typeof window === "undefined") {
+      return [];
+    }
+    const raw = window.localStorage.getItem(ROUTE_TEMPLATES_KEY);
+    if (!raw) {
+      return [];
+    }
+    try {
+      const parsed = JSON.parse(raw) as RouteTemplate[];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
 
   const [recordType, setRecordType] = useState<"order" | "work_order">("order");
   const [categoryId, setCategoryId] = useState("");
@@ -262,17 +298,25 @@ export default function WorkOrdersPage() {
   const [qrDataUrl, setQrDataUrl] = useState("");
 
   const selectedProduct = products.find((item) => item.id === productId);
-  const selectedRoute =
-    selectedProduct?.processRouteSteps?.map((step) => ({
-      ...step,
-      processPlannedQty: Math.round(plannedQty * ((step.reportFactor ?? 100) / 100)),
-    })) || [];
+  const selectedRouteTemplate = routeTemplates.find((item) => item.id === selectedProduct?.routeTemplateId);
+  const baseRouteSteps =
+    selectedRouteTemplate?.steps && selectedRouteTemplate.steps.length > 0
+      ? selectedRouteTemplate.steps
+      : selectedProduct?.processRouteSteps || [];
+  const selectedRoute = baseRouteSteps.map((step) => ({
+    ...step,
+    processPlannedQty: Math.round(plannedQty * ((step.reportFactor ?? 100) / 100)),
+  }));
   const fallbackProcess = processPlans[0];
   const selectedProcess = selectedRoute.length > 0 ? null : fallbackProcess;
 
-  const processFactor = selectedProcess?.reportFactor ?? 100;
+  const processFactor = selectedRoute[0]?.reportFactor ?? selectedProcess?.reportFactor ?? 100;
   const processPlannedQty =
     selectedRoute.length > 0 ? selectedRoute.reduce((acc, item) => acc + item.processPlannedQty, 0) : Math.round(plannedQty * (processFactor / 100));
+  const primaryWorkers =
+    selectedRoute.length > 0
+      ? selectedRoute[0]?.defaultWorkers || []
+      : selectedProcess?.defaultWorkers || [];
 
   const saveRecords = (next: WorkOrderRecord[]) => {
     setRecords(next);
@@ -378,7 +422,7 @@ export default function WorkOrdersPage() {
       plannedQty,
       dueDate,
       departmentName: mainRouteStep?.departmentName || selectedProcess?.departmentName || "",
-      workers: selectedProcess?.defaultWorkers || [],
+      workers: primaryWorkers,
       processRouteSteps:
         selectedRoute.length > 0
           ? selectedRoute.map((step) => ({
@@ -596,7 +640,7 @@ export default function WorkOrdersPage() {
             <FormField label={copy.department}>
               <TextInput
                 type="text"
-                value={selectedProcess?.departmentName || ""}
+                value={selectedRoute[0]?.departmentName || selectedProcess?.departmentName || ""}
                 readOnly
                 className="bg-slate-50 text-slate-700"
               />
@@ -605,7 +649,7 @@ export default function WorkOrdersPage() {
             <FormField label={copy.workers}>
               <TextInput
                 type="text"
-                value={(selectedProcess?.defaultWorkers || []).join(", ")}
+                value={primaryWorkers.join(", ")}
                 readOnly
                 className="bg-slate-50 text-slate-700"
               />

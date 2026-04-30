@@ -39,6 +39,15 @@ type ProductRouteStep = {
   reportFactor: number;
 };
 
+type RouteTemplate = {
+  id: string;
+  code: string;
+  name: string;
+  version: string;
+  status: "active" | "draft" | "inactive";
+  steps: ProductRouteStep[];
+};
+
 type ProductRecord = {
   id: string;
   productType: ProductType;
@@ -51,6 +60,8 @@ type ProductRecord = {
   drawingPath: string;
   processPlanId: string;
   processPlanName: string;
+  routeTemplateId?: string;
+  routeTemplateName?: string;
   processRouteSteps: ProductRouteStep[];
   note: string;
   createdAt: string;
@@ -59,6 +70,7 @@ type ProductRecord = {
 const CATEGORIES_KEY = "meslite_product_categories";
 const PRODUCTS_KEY = "meslite_products";
 const PROCESS_PLANS_KEY = "meslite_process_plans";
+const ROUTE_TEMPLATES_KEY = "meslite_route_templates";
 
 const typePrefix: Record<ProductType, string> = {
   part: "1",
@@ -84,6 +96,9 @@ const text = {
     note: "备注",
     drawingPath: "产品图纸路径或 URL",
     processPlan: "工艺编制",
+    routeTemplate: "工艺库模板（优先）",
+    openRouteTemplateSetup: "工艺库管理",
+    routeTemplateHint: "优先选择工艺库，单工序与多工序均可复用。未选择时可手动编排路线。",
     noProcessPlan: "暂无工艺编制，请先创建工艺编制。",
     openProcessPlanning: "新增工艺编制",
     addStep: "添加到路线",
@@ -120,6 +135,9 @@ const text = {
     note: "Note",
     drawingPath: "Product drawing path or URL",
     processPlan: "Process plan",
+    routeTemplate: "Route Template (preferred)",
+    openRouteTemplateSetup: "Route Template Library",
+    routeTemplateHint: "Prefer selecting a reusable template. Manual route editing remains available as fallback.",
     noProcessPlan: "No process plans yet. Please create one first.",
     openProcessPlanning: "Add Process Plan",
     addStep: "Add to Route",
@@ -204,11 +222,27 @@ export default function ProductCenterPage() {
       return [];
     }
   });
+  const [routeTemplates] = useState<RouteTemplate[]>(() => {
+    if (typeof window === "undefined") {
+      return [];
+    }
+    const raw = window.localStorage.getItem(ROUTE_TEMPLATES_KEY);
+    if (!raw) {
+      return [];
+    }
+    try {
+      const parsed = JSON.parse(raw) as RouteTemplate[];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
   const [productType, setProductType] = useState<ProductType>("part");
   const [imagePath, setImagePath] = useState("");
   const [productName, setProductName] = useState("");
   const [productSpec, setProductSpec] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [routeTemplateId, setRouteTemplateId] = useState("");
   const [processPlanId, setProcessPlanId] = useState("");
   const [note, setNote] = useState("");
   const [drawingPath, setDrawingPath] = useState("");
@@ -217,6 +251,9 @@ export default function ProductCenterPage() {
   const productCode = useMemo(() => nextCode(productType, products), [productType, products]);
 
   const selectedProcessPlan = processPlans.find((item) => item.id === processPlanId);
+  const selectedRouteTemplate = routeTemplates.find((item) => item.id === routeTemplateId);
+  const effectiveRouteSteps =
+    selectedRouteTemplate?.steps && selectedRouteTemplate.steps.length > 0 ? selectedRouteTemplate.steps : routeSteps;
 
   const saveCategories = (nextCategories: ProductCategory[]) => {
     setCategories(nextCategories);
@@ -230,7 +267,7 @@ export default function ProductCenterPage() {
 
   const saveProduct = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (routeSteps.length === 0) {
+    if (effectiveRouteSteps.length === 0) {
       setMessage(copy.routeEmpty);
       return;
     }
@@ -245,9 +282,11 @@ export default function ProductCenterPage() {
       categoryName,
       imagePath: imagePath.trim(),
       drawingPath: drawingPath.trim(),
-      processPlanId: routeSteps[0].processPlanId,
-      processPlanName: routeSteps[0].processPlanName,
-      processRouteSteps: routeSteps,
+      processPlanId: effectiveRouteSteps[0].processPlanId,
+      processPlanName: effectiveRouteSteps[0].processPlanName,
+      routeTemplateId: selectedRouteTemplate?.id || "",
+      routeTemplateName: selectedRouteTemplate ? `${selectedRouteTemplate.name} (${selectedRouteTemplate.version})` : "",
+      processRouteSteps: effectiveRouteSteps,
       note: note.trim(),
       createdAt: new Date().toISOString(),
     };
@@ -260,6 +299,7 @@ export default function ProductCenterPage() {
     setDrawingPath("");
     setNote("");
     setCategoryId("");
+    setRouteTemplateId("");
     setProcessPlanId("");
     setRouteSteps([]);
   };
@@ -384,6 +424,34 @@ export default function ProductCenterPage() {
             </label>
 
             <div className="text-sm text-slate-700 md:col-span-2">
+              <p>{copy.routeTemplate}</p>
+              <div className="mt-1 flex flex-wrap gap-2">
+                <SelectInput
+                  value={routeTemplateId}
+                  onChange={(e) => setRouteTemplateId(e.target.value)}
+                  aria-label={copy.routeTemplate}
+                  className="min-w-64"
+                >
+                  <option value="">{copy.routeTemplate}</option>
+                  {routeTemplates.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name} ({item.version}) - {item.code}
+                    </option>
+                  ))}
+                </SelectInput>
+                <SecondaryButton
+                  type="button"
+                  onClick={() => router.push("/meslite/master-data/route-templates")}
+                  className="text-xs"
+                >
+                  <FolderPlus className="h-4 w-4" />
+                  {copy.openRouteTemplateSetup}
+                </SecondaryButton>
+              </div>
+              <p className="mt-2 text-xs text-slate-500">{copy.routeTemplateHint}</p>
+            </div>
+
+            <div className="text-sm text-slate-700 md:col-span-2">
               <p>{copy.processPlan}</p>
               <div className="mt-1 flex flex-wrap gap-2">
                 <SelectInput
@@ -411,7 +479,7 @@ export default function ProductCenterPage() {
                   type="button"
                   onClick={addRouteStep}
                   className="text-xs"
-                  disabled={!processPlanId}
+                  disabled={!processPlanId || Boolean(routeTemplateId)}
                 >
                   <PlusCircle className="h-4 w-4" />
                   {copy.addStep}
@@ -424,7 +492,7 @@ export default function ProductCenterPage() {
 
             <div className="md:col-span-2">
               <p className="text-sm font-medium text-slate-700">{copy.routeSteps}</p>
-              {routeSteps.length === 0 ? (
+              {effectiveRouteSteps.length === 0 ? (
                 <p className="mt-2 text-xs text-slate-500">{copy.routeEmpty}</p>
               ) : (
                 <DataTable className="mt-2">
@@ -438,7 +506,7 @@ export default function ProductCenterPage() {
                     </tr>
                   </DataTableHead>
                   <DataTableBody>
-                    {routeSteps.map((step, index) => (
+                    {effectiveRouteSteps.map((step, index) => (
                       <DataTableRow key={`${step.processPlanId}_${index}`} striped={index % 2 === 1}>
                         <DataTableCell>{step.stepNo}</DataTableCell>
                         <DataTableCell>{step.processPlanName}</DataTableCell>
@@ -450,7 +518,7 @@ export default function ProductCenterPage() {
                               type="button"
                               onClick={() => moveRouteStep(index, "up")}
                               className="min-h-8 px-2 py-1 text-xs"
-                              disabled={index === 0}
+                              disabled={index === 0 || Boolean(routeTemplateId)}
                             >
                               <ArrowUp className="h-3.5 w-3.5" />
                             </SecondaryButton>
@@ -458,7 +526,7 @@ export default function ProductCenterPage() {
                               type="button"
                               onClick={() => moveRouteStep(index, "down")}
                               className="min-h-8 px-2 py-1 text-xs"
-                              disabled={index === routeSteps.length - 1}
+                              disabled={index === effectiveRouteSteps.length - 1 || Boolean(routeTemplateId)}
                             >
                               <ArrowDown className="h-3.5 w-3.5" />
                             </SecondaryButton>
@@ -466,6 +534,7 @@ export default function ProductCenterPage() {
                               type="button"
                               onClick={() => removeRouteStep(index)}
                               className="min-h-8 px-2 py-1 text-xs text-red-600"
+                              disabled={Boolean(routeTemplateId)}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </SecondaryButton>
@@ -509,7 +578,9 @@ export default function ProductCenterPage() {
                     <DataTableCell>{item.productName}</DataTableCell>
                     <DataTableCell>{item.productSpec}</DataTableCell>
                     <DataTableCell>{item.categoryName || "-"}</DataTableCell>
-                    <DataTableCell>{item.processRouteSteps?.map((s) => s.processPlanName).join(" -> ") || item.processPlanName || "-"}</DataTableCell>
+                    <DataTableCell>
+                      {item.routeTemplateName || item.processRouteSteps?.map((s) => s.processPlanName).join(" -> ") || item.processPlanName || "-"}
+                    </DataTableCell>
                   </DataTableRow>
                 ))}
               </DataTableBody>

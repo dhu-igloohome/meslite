@@ -12,14 +12,14 @@ const text = {
   zh: {
     title: "基础数据",
     subtitle: "请选择子模块进入基础资料维护流程。",
-    modules: ["产品中心", "工艺编制", "订单/工单分类", "产品分类"],
+    modules: ["产品中心", "工艺编制", "工艺库管理", "订单/工单分类", "产品分类"],
     enterHint: "点击进入模块",
     backLabel: "返回首页",
   },
   en: {
     title: "Master Data",
     subtitle: "Choose a submodule to maintain master data.",
-    modules: ["Product Center", "Process Planning", "Order/Work Order Types", "Product Categories"],
+    modules: ["Product Center", "Process Planning", "Route Template Library", "Order/Work Order Types", "Product Categories"],
     enterHint: "Enter module",
     backLabel: "Back to Dashboard",
   },
@@ -28,6 +28,7 @@ const text = {
 const moduleRoutes = [
   "/meslite/master-data/product-center",
   "/meslite/master-data/process-planning",
+  "/meslite/master-data/route-templates",
   "/meslite/master-data/order-workorder-categories",
   "/meslite/master-data/product-categories",
 ];
